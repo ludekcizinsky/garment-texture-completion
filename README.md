@@ -16,6 +16,14 @@ conda activate pbr
 ```
 2. **Download the pre-trained models**:
 Download the [PBR texture VAEs](https://huggingface.co/IHe-KaiI/DressCode/tree/main/material_gen) pre-trained by [DressCode](https://github.com/IHe-KaiI/DressCode) to ```./checkpoints``` folder.
+
+```bash
+mkdir -p checkpoints
+huggingface-cli download IHE-KaiI/DressCode --include "*.safetensors" --local-dir ./checkpoints
+mv checkpoints/material_gen/refine_vae/ checkpoints/refine_vae
+rm -rf checkpoints/material_gen
+```
+
 Download our pre-trained texture completion diffusion model([completion_diffusion.zip](https://1drv.ms/f/c/d70f26d613e83858/ErrnQtxxg6ZKjIDdLQYJu6cBMCjvf1ZvNnacwrhAE-S3UQ?e=YBaKl4)) and unzip it at ```./checkpoints``` folder.
 The ```./checkpoints``` directory structure should follow the below hierarchy:
 ```
