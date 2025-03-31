@@ -1,0 +1,10 @@
+Cotton
+Linen
+Wool
+Silk
+Denim
+Jersey
+Velvet
+Satin
+Chiffon
+Tweed
