@@ -25,6 +25,12 @@ rm -rf checkpoints/material_gen
 ```
 
 Download our pre-trained texture completion diffusion model([completion_diffusion.zip](https://1drv.ms/f/c/d70f26d613e83858/ErrnQtxxg6ZKjIDdLQYJu6cBMCjvf1ZvNnacwrhAE-S3UQ?e=YBaKl4)) and unzip it at ```./checkpoints``` folder.
+
+```bash
+curl -L -o completion_diffusion.zip "https://bit.ly/tuned-garment-diff"
+unzip completion_diffusion.zip -d checkpoints
+```
+
 The ```./checkpoints``` directory structure should follow the below hierarchy:
 ```
 ${Project}  
@@ -68,6 +74,11 @@ The output is at `./outputs` folder.
 ## Test
 1. **Download the test set**:
 Download the test set with **500** paired patrial-complete PBR texture maps from [OneDrive](https://1drv.ms/f/c/d70f26d613e83858/ErrnQtxxg6ZKjIDdLQYJu6cBMCjvf1ZvNnacwrhAE-S3UQ?e=nd1okN) ```testset.zip``` and unzip at ```./datasets``` folder.
+
+```bash
+curl -L -o testset.zip "https://bit.ly/4k2zq6N"
+```
+
 2. **Evaluate the performance**:
 ```bash
 python test.py
@@ -79,7 +90,11 @@ You will get the results on SSIM, LPIPS, PSNR:
 
 ## Train
 1. **Download the training set**:
-Download the training set with **27k** paired patrial-complete PBR texture maps [OneDrive](https://1drv.ms/f/c/d70f26d613e83858/ErrnQtxxg6ZKjIDdLQYJu6cBMCjvf1ZvNnacwrhAE-S3UQ?e=nd1okN) ```fabric_w_logo.zip``` and unzip at ```./datasets``` folder.
+Download the training set with **27k** paired patrial-complete PBR texture maps [OneDrive](https://1drv.ms/f/c/d70f26d613e83858/ErrnQtxxg6ZKjIDdLQYJu6cBMCjvf1ZvNnacwrhAE-S3UQ?e=nd1okN) ```fabric_w_logo.zip``` and unzip at ```./datasets``` folder
+
+```bash
+curl -L -o fabric_with_logo.zip "https://bit.ly/41qs8Cf"
+```
 2. **Training**:
 ```bash
 bash train.sh

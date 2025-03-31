@@ -52,9 +52,6 @@ from diffusers.utils import check_min_version, deprecate, is_wandb_available
 from diffusers.utils.import_utils import is_xformers_available
 from load_data import DatasetInpainting
 
-# Will error if the minimal version of diffusers is not installed. Remove at your own risks.
-check_min_version("0.22.0.dev0")
-
 logger = get_logger(__name__, log_level="INFO")
 
 WANDB_TABLE_COL_NAMES = ["partial_image", "full_diffuse_img", "full_normal_img", "full_roughness_img", "prompt"]
@@ -413,6 +410,8 @@ def main():
             repo_id = create_repo(
                 repo_id=args.hub_model_id or Path(args.output_dir).name, exist_ok=True, token=args.hub_token
             ).repo_id
+    
+    print("--------- Done")
 
     # Load scheduler, tokenizer and models.
     noise_scheduler = DDPMScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler")
