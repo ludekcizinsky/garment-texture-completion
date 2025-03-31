@@ -1,0 +1,27 @@
+tags: ["dev"]
+
+pretrained_model_name_or_path: "stable-diffusion-v1-5/stable-diffusion-v1-5"
+dataset_path: "datasets/fabric_w_logo"
+vae_path: "/home/cizinsky/garment-texture-completion/src/data_generation/dresscode/material_gen"
+output_dir: "checkpoints/pbr_texture_completion_reproduce"
+
+resolution: 512
+validation_epochs: 1
+train_batch_size: 8
+
+gradient_accumulation_steps: 1
+gradient_checkpointing: true
+
+max_train_steps: 28000
+checkpointing_steps: 4000
+checkpoints_total_limit: 5
+
+learning_rate: 5e-5
+weight_decay: 1e-2
+max_grad_norm: 1
+lr_warmup_steps: 0
+
+conditioning_dropout_prob: 0.05
+seed: 42
+
+ddim_loss: true

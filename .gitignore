@@ -1,2 +1,70 @@
+# My folders
 checkpoints/
 playground/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+pip-wheel-metadata/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# PyCharm / VSCode / other IDEs
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Logs and debugging
+*.log
+logs/
+*.out
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Environment / secrets
+.env
+*.env
+.env.*
+
+# W&B and experiment logs
+wandb/
+lightning_logs/
+checkpoints/
+tensorboard/
+
+# Datasets & outputs
+datasets/
+outputs/
+*.h5
+*.pt
+*.pth
+*.ckpt
+
+# Pytest and coverage
+.cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# MyPy & other tools
+.mypy_cache/
+.dmypy.json
+.pyre/
+.pytype/
