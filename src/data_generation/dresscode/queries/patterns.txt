@@ -1,10 +1,30 @@
 Polka Dots
 Vertical Stripes
+Horizontal Stripes
 Houndstooth
 Plaid
+Gingham
+Pinstripes
+Tartan
+Windowpane
+Chevron
+Argyle
 Paisley
 Floral Print
-Animal Print
-Tie-Dye
+Toile de Jouy
+Ikat
+Brocade
+Damask
+Jacquard
+Seersucker
 Camouflage
-Chevron
+Tie-Dye
+Ombre
+Animal Print (Leopard)
+Animal Print (Zebra)
+Marled Knit
+Heathered
+Herringbone
+Checks
+Baroque Scroll
+Geometric Shapes
