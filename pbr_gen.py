@@ -7,9 +7,8 @@ import os
 
 
 class DressCodePBRGen:
-	def __init__(self):
+	def __init__(self, local_dir):
 		sd_device = "cuda"
-		local_dir = "/home/cizinsky/garment-texture-completion/utils/data_gen/dresscode/material_gen"
 
 		self.vae_diffuse = AutoencoderKL.from_pretrained(
 			f"{local_dir}/refine_vae", subfolder="vae_checkpoint_diffuse", revision="fp16", local_files_only=True, torch_dtype=torch.float16).half().to(sd_device)
@@ -62,7 +61,7 @@ def download_models_locally():
 	repo_id = "IHe-KaiI/DressCode"
 
 	# Specify the local directory where you want to download the files
-	local_dir = "/home/cizinsky/garment-texture-completion/utils/data_gen/dresscode/downloaded_models"
+	local_dir = "/home/cizinsky/garment-texture-completion/src/data_gen/dresscode/downloaded_models"
 
 	# Download only the 'material_gen' directory
 	snapshot_download(repo_id=repo_id, local_dir=local_dir, allow_patterns="material_gen/*")
@@ -80,7 +79,7 @@ if __name__ == "__main__":
 	scratch_path = "/scratch/izar/cizinsky/pbr_dresscode"
 	prompt_data = list()
 	for file_name in ["colours.txt", "patterns.txt", "materials.txt"]:
-		prompt_data.append(read_txt(os.path.join(project_path, "utils/data_gen/dresscode/queries", file_name)))
+		prompt_data.append(read_txt(os.path.join(project_path, "src/data_generation/dresscode/queries", file_name)))
 
 	# Create a combination of the three lists
 	prompts = []
@@ -90,7 +89,8 @@ if __name__ == "__main__":
 				prompts.append(f"{material} {colour} {pattern}")
 
 	# Generate the PBR textures
-	generator = DressCodePBRGen()
+	local_dir = f"{project_path}/src/data_generation/dresscode/material_gen"
+	generator = DressCodePBRGen(local_dir)
 	out_folder = scratch_path
 	if not os.path.exists(out_folder):
 		os.makedirs(out_folder)
