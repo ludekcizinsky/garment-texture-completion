@@ -5,7 +5,7 @@ import sys
 import random
 import torch.utils.data as data
 from torchvision import transforms
-from utils.data_utils import generate_random_polygon, generate_polygon_mask, apply_random_mask, generate_random_square_mask
+from helpers.data_utils import generate_random_polygon, generate_polygon_mask, apply_random_mask, generate_random_square_mask
 
 class DatasetBase(data.Dataset):
     def __init__(self, max_v=None):

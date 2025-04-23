@@ -1,7 +1,7 @@
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 
-from src.pl_module import GarmentInpainterModule
+from helpers.pl_module import GarmentInpainterModule
 
 def prepare_wandb_logger(cfg):
 

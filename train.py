@@ -1,10 +1,10 @@
 import pytorch_lightning as pl
 import torch
 
-from src.helpers import prepare_wandb_logger
-from src.helpers import prepare_callbacks
-from src.helpers import prepare_data_loaders
-from src.helpers import prepare_pl_module
+from helpers.callbacks import prepare_wandb_logger
+from helpers.callbacks import prepare_callbacks
+from helpers.callbacks import prepare_data_loaders
+from helpers.callbacks import prepare_pl_module
 
 from omegaconf import OmegaConf
 from dotenv import load_dotenv
