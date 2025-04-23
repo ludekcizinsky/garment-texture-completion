@@ -1,13 +1,16 @@
 tags: ["dev"]
 
+vae_path: "/home/cizinsky/garment-texture-completion/src/data_generation/dresscode/material_gen"
 pretrained_model_name_or_path: "stable-diffusion-v1-5/stable-diffusion-v1-5"
 dataset_path: "datasets/fabric_w_logo"
-vae_path: "/home/cizinsky/garment-texture-completion/src/data_generation/dresscode/material_gen"
+
 output_dir: "checkpoints/pbr_texture_completion_reproduce"
 
-resolution: 512
-validation_epochs: 1
-train_batch_size: 8
+data:
+  pbr_maps_path: "/scratch/izar/cizinsky/garment-completion/pbr_maps/dresscode"
+  mask_path: "/scratch/izar/cizinsky/garment-completion/masks/shirt.png"
+  validation_epochs: 1
+  train_batch_size: 8
 
 gradient_accumulation_steps: 1
 gradient_checkpointing: true
