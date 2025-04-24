@@ -2,7 +2,6 @@ import os
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from transformers import CLIPTextModel, CLIPTokenizer
 from diffusers import AutoencoderKL, DDPMScheduler, UNet2DConditionModel
@@ -12,15 +11,12 @@ class GarmentDenoiser(nn.Module):
         super().__init__()
 
         self.cfg = cfg
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self._load_pretrained_components()
         self._modify_unet()
         prompt = "fill the missing parts of a fabric texture matching the existing colors and style"
-        self.prompt_embeds = self._get_encoded_prompt(prompt)
-        null_prompt = ""
-        self.null_prompt_embeds = self._get_encoded_prompt(null_prompt)
-
+        self.register_buffer("prompt_embeds", self._get_encoded_prompt(prompt))
+        self.register_buffer("null_prompt_embeds", self._get_encoded_prompt(""))
 
     def _get_encoded_prompt(self, prompt):
 
@@ -129,7 +125,7 @@ class GarmentDenoiser(nn.Module):
 
         if dropout_prob > 0:
             # Text
-            random_p = torch.rand(bsz, device=self.device)
+            random_p = torch.rand(bsz)
             prompt_mask = random_p < 2 * dropout_prob
             prompt_mask = prompt_mask.reshape(bsz, 1, 1)
             null_conditioning = self.null_prompt_embeds.repeat(bsz, 1, 1)
