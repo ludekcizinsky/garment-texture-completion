@@ -11,14 +11,11 @@ class GarmentDenoiser(nn.Module):
         super().__init__()
 
         self.cfg = cfg
+        self.weight_dtype = torch.float16 if self.cfg.trainer.precision == "16-mixed" else torch.float32
 
         self._load_pretrained_components()
         self._modify_unet()
-        prompt = "fill the missing parts of a fabric texture matching the existing colors and style"
-        self.register_buffer("prompt_embeds", self._get_encoded_prompt(prompt))
-        self.register_buffer("null_prompt_embeds", self._get_encoded_prompt(""))
         self.register_buffer("alphas_cumprod", self.noise_scheduler.alphas_cumprod)
-
 
     def _get_encoded_prompt(self, prompt):
 
@@ -54,12 +51,13 @@ class GarmentDenoiser(nn.Module):
             self.cfg.model.diffusion_path, subfolder="tokenizer", 
         )
         self.unet = UNet2DConditionModel.from_pretrained(
-            self.cfg.model.diffusion_path, subfolder="unet", 
+            self.cfg.model.diffusion_path, subfolder="unet",
         )
         self.unet.enable_gradient_checkpointing()
 
         self.text_encoder = CLIPTextModel.from_pretrained(
             self.cfg.model.diffusion_path, subfolder="text_encoder", 
+            torch_dtype=self.weight_dtype 
         )
         for param in self.text_encoder.parameters():
             param.requires_grad = False
@@ -70,24 +68,10 @@ class GarmentDenoiser(nn.Module):
             subfolder="vae_checkpoint_diffuse",
             revision="fp32",
             local_files_only=True,
-            torch_dtype=torch.float32,
-        )
-        self.vae_normal = AutoencoderKL.from_pretrained(
-            os.path.join(self.cfg.model.vae_path, "refine_vae"),
-            subfolder="vae_checkpoint_normal",
-            revision="fp32",
-            local_files_only=True,
-            torch_dtype=torch.float32,
-        )
-        self.vae_roughness = AutoencoderKL.from_pretrained(
-            os.path.join(self.cfg.model.vae_path, "refine_vae"),
-            subfolder="vae_checkpoint_roughness",
-            revision="fp32",
-            local_files_only=True,
-            torch_dtype=torch.float32,
+            torch_dtype=self.weight_dtype,
         )
 
-        for module in [self.vae_diffuse, self.vae_normal, self.vae_roughness]:
+        for module in [self.vae_diffuse]:
             for param in module.parameters():
                 param.requires_grad = False
         
@@ -118,7 +102,7 @@ class GarmentDenoiser(nn.Module):
             new_conv_in.weight[:, :4, :, :].copy_(self.unet.conv_in.weight)
             self.unet.conv_in = new_conv_in
 
-    def _classifier_free_guidance(self, text_embeds, partial_image_embeds):
+    def _classifier_free_guidance(self, text_embeds, null_prompt_embeds, partial_image_embeds):
         """
         # Conditioning dropout to support classifier-free guidance during inference. For more details
         # check out the section 3.2.1 of the original paper https://arxiv.org/abs/2211.09800.
@@ -132,7 +116,7 @@ class GarmentDenoiser(nn.Module):
             random_p = torch.rand(bsz, device=text_embeds.device)
             prompt_mask = random_p < 2 * dropout_prob
             prompt_mask = prompt_mask.reshape(bsz, 1, 1)
-            null_conditioning = self.null_prompt_embeds.repeat(bsz, 1, 1)
+            null_conditioning = null_prompt_embeds.repeat(bsz, 1, 1)
             text_embeds = torch.where(prompt_mask, null_conditioning, text_embeds)
 
             # Partial image
@@ -148,12 +132,12 @@ class GarmentDenoiser(nn.Module):
 
     def encode_latents(self, full_diffuse_img):
         # returns z ∼ q(z|x) × scaling_factor
-        latents = self.vae_diffuse.encode(full_diffuse_img).latent_dist.sample()
+        latents = self.vae_diffuse.encode(full_diffuse_img.to(self.weight_dtype)).latent_dist.sample()
         return latents * self.vae_diffuse.config.scaling_factor
 
     def encode_partial(self, partial_img):
         # returns the deterministic encoding of the partial image
-        return self.vae_diffuse.encode(partial_img).latent_dist.mode()
+        return self.vae_diffuse.encode(partial_img.to(self.weight_dtype)).latent_dist.mode()
 
     def denoise_step(self, noisy_latents, timesteps, text_embeds):
         return self.unet(noisy_latents, timesteps, text_embeds).sample

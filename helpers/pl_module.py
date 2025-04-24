@@ -14,6 +14,18 @@ class GarmentInpainterModule(pl.LightningModule):
         self.cfg = cfg
         self.model = GarmentDenoiser(cfg)
 
+        self.prompt = "fill the missing parts of a fabric texture matching the existing colors and style"
+        self.null_prompt = ""
+
+    def setup(self, stage=None):
+        # Called once per device
+        self.prompt_embeds = self.model._get_encoded_prompt(self.prompt).to(self.device, dtype=self._amp_dtype())
+        self.null_prompt_embeds = self.model._get_encoded_prompt(self.null_prompt).to(self.device, dtype=self._amp_dtype())
+
+    def _amp_dtype(self):
+        return torch.float16 if self.trainer.precision == "16-mixed" else torch.float32
+
+
     def forward(self, noisy_latents, timesteps, text_embeds, partial_image_embeds):
         model_pred =  self.model.denoise_step(
                     torch.cat([noisy_latents, partial_image_embeds], dim=1),
@@ -29,6 +41,7 @@ class GarmentInpainterModule(pl.LightningModule):
 
         # Noisy latents and timesteps
         latents = self.model.encode_latents(full_diffuse_imgs)
+
         noise = torch.randn_like(latents, device=latents.device)
         timesteps = torch.randint(
             0,
@@ -40,11 +53,11 @@ class GarmentInpainterModule(pl.LightningModule):
         target = noise
 
         # Conditioning
-        text_embeds = self.model.prompt_embeds.repeat(bsz, 1, 1)
+        text_embeds = self.prompt_embeds.repeat(bsz, 1, 1)
         partial_image_embeds = self.model.encode_partial(partial_diffuse_imgs)
         if self.hparams.model.conditioning_dropout_prob > 0:
             text_embeds, partial_image_embeds = self.model._classifier_free_guidance(
-                text_embeds, partial_image_embeds
+                text_embeds, self.null_prompt_embeds, partial_image_embeds
             )
 
         # Denoising

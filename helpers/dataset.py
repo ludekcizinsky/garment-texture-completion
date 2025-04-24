@@ -36,6 +36,7 @@ class InpaintingDataset(utils.data.Dataset):
         super().__init__()
 
         self.cfg = cfg
+        self.res = self.cfg.data.res
 
         self.texture_paths = [
             os.path.join(cfg.data.pbr_maps_path, folder)
@@ -43,7 +44,7 @@ class InpaintingDataset(utils.data.Dataset):
         ]
 
         mask = np.array(Image.open(cfg.data.mask_path).convert("L")) # Load mask as grayscale
-        mask = cv2.resize(mask, (512, 512), interpolation=cv2.INTER_NEAREST).astype("float32") / 255.0
+        mask = cv2.resize(mask, (self.res, self.res), interpolation=cv2.INTER_NEAREST).astype("float32") / 255.0
         self.mask = np.stack([mask] * 3, axis=-1)  # Convert to 3 channels
  
     def __len__(self):
@@ -52,6 +53,8 @@ class InpaintingDataset(utils.data.Dataset):
     def __getitem__(self, index):
 
         diffuse_img = data_utils.load_image_as_array(os.path.join(self.texture_paths[index], "texture_diffuse.png"))
+        diffuse_img = cv2.resize(diffuse_img, (self.res, self.res), interpolation=cv2.INTER_AREA)
+
         partial_img = diffuse_img * self.mask
 
         diffuse_img = data_utils.normalise_image(diffuse_img)
