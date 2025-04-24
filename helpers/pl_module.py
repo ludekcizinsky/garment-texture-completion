@@ -9,7 +9,9 @@ from helpers.losses import ddim_loss as ddim_loss_f
 class GarmentInpainterModule(pl.LightningModule):
     def __init__(self, cfg):
         super().__init__()
-        self.save_hyperparameters()
+        self.save_hyperparameters(cfg)
+
+        self.cfg = cfg
         self.model = GarmentDenoiser(cfg)
 
     def forward(self, noisy_latents, timesteps, text_embeds, partial_image_embeds):
@@ -88,8 +90,8 @@ class GarmentInpainterModule(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
             self.model.parameters(),
-            lr=self.hparams.model.learning_rate,
-            weight_decay=self.hparams.model.weight_decay,
+            lr=self.cfg.model.learning_rate,
+            weight_decay=self.cfg.model.weight_decay,
         )
         
         return {

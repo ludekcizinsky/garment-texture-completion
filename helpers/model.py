@@ -30,7 +30,7 @@ class GarmentDenoiser(nn.Module):
             truncation=True,
             return_tensors="pt", 
         )
-        text_inputs = {k: v.to("cuda") for k,v in text_inputs.items()}
+        text_inputs = {k: v for k,v in text_inputs.items()}
 
 
         # Encode with text encoder
@@ -56,6 +56,8 @@ class GarmentDenoiser(nn.Module):
         self.unet = UNet2DConditionModel.from_pretrained(
             self.cfg.model.diffusion_path, subfolder="unet", 
         )
+        self.unet.enable_gradient_checkpointing()
+
         self.text_encoder = CLIPTextModel.from_pretrained(
             self.cfg.model.diffusion_path, subfolder="text_encoder", 
         )
@@ -64,21 +66,21 @@ class GarmentDenoiser(nn.Module):
 
         # VAE (obtained from DressCode)
         self.vae_diffuse = AutoencoderKL.from_pretrained(
-            os.path.join(self.cfg.vae_path, "refine_vae"),
+            os.path.join(self.cfg.model.vae_path, "refine_vae"),
             subfolder="vae_checkpoint_diffuse",
             revision="fp32",
             local_files_only=True,
             torch_dtype=torch.float32,
         )
         self.vae_normal = AutoencoderKL.from_pretrained(
-            os.path.join(self.cfg.vae_path, "refine_vae"),
+            os.path.join(self.cfg.model.vae_path, "refine_vae"),
             subfolder="vae_checkpoint_normal",
             revision="fp32",
             local_files_only=True,
             torch_dtype=torch.float32,
         )
         self.vae_roughness = AutoencoderKL.from_pretrained(
-            os.path.join(self.cfg.vae_path, "refine_vae"),
+            os.path.join(self.cfg.model.vae_path, "refine_vae"),
             subfolder="vae_checkpoint_roughness",
             revision="fp32",
             local_files_only=True,
@@ -127,7 +129,7 @@ class GarmentDenoiser(nn.Module):
 
         if dropout_prob > 0:
             # Text
-            random_p = torch.rand(bsz)
+            random_p = torch.rand(bsz, device=text_embeds.device)
             prompt_mask = random_p < 2 * dropout_prob
             prompt_mask = prompt_mask.reshape(bsz, 1, 1)
             null_conditioning = self.null_prompt_embeds.repeat(bsz, 1, 1)

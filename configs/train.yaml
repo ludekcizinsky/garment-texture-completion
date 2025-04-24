@@ -8,13 +8,13 @@ data:
   trn_frac: 0.9
   pbr_maps_path: "/scratch/izar/cizinsky/garment-completion/pbr_maps/dresscode"
   mask_path: "/scratch/izar/cizinsky/garment-completion/masks/shirt.png"
-  batch_size: 8
-  num_workers: 2
+  batch_size: 1
+  num_workers: 0
 
 model:
   learning_rate: 5e-5
   weight_decay: 1e-2
-  vae_path: "/home/cizinsky/garment-texture-completion/src/data_generation/dresscode/material_gen"
+  vae_path: "/home/cizinsky/garment-texture-completion/data_generation/dresscode/material_gen"
   diffusion_path: "stable-diffusion-v1-5/stable-diffusion-v1-5"
   conditioning_dropout_prob: 0.05 # classifier-free guidance
   ddim_loss: true
@@ -22,13 +22,14 @@ model:
 
 # todo: gradient checkpointing
 trainer:
-  max_steps: 28000
+  max_steps: 4 # original: 28000
   accelerator: gpu
   devices: 1
-  checkpoint_every_n_epochs: 4000
+  checkpoint_every_n_train_steps: 2 # original: 4000
   checkpoints_total_limit: 5
   accumulate_grad_batches: 1 
-  max_grad_norm: 1 
+  max_grad_norm: 1 # gradient clipping
+  precision: 16
 
 ######################################
 

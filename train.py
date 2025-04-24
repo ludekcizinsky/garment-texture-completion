@@ -1,4 +1,6 @@
-from omegaconf import OmegaConf
+import hydra
+from omegaconf import DictConfig, OmegaConf
+
 from dotenv import load_dotenv
 load_dotenv()  
 
@@ -9,11 +11,11 @@ from helpers.dataset import get_dataloaders
 from helpers.callbacks import get_callbacks
 from helpers.pl_module import GarmentInpainterModule
 
-def train():
+@hydra.main(config_path="configs", config_name="train.yaml", version_base="1.1")
+def train(cfg: DictConfig):
 
     print("-"*50)
-    cfg = OmegaConf.load("configs/train.yaml")
-    print(cfg)
+    print(OmegaConf.to_yaml(cfg))  # print config to verify
     print("-"*50)
 
     pl.seed_everything(cfg.seed)
@@ -34,6 +36,7 @@ def train():
         accelerator=cfg.trainer.accelerator,
         devices=cfg.trainer.devices,
         gradient_clip_val=cfg.trainer.max_grad_norm,
+        precision=cfg.trainer.precision,
         logger=logger,
         callbacks=callbacks,
         deterministic=True,

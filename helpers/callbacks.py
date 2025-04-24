@@ -5,7 +5,7 @@ def get_callbacks(cfg):
     checkpoint_cb = ModelCheckpoint(
         dirpath="checkpoints/",
         every_n_train_steps=cfg.trainer.checkpoint_every_n_train_steps,
-        save_top_k=cfg.trainer.checkpoint_total_limit,
+        save_top_k=cfg.trainer.checkpoints_total_limit,
         monitor="step",  # Dummy monitor so it saves by step
         mode="max",
     )
