@@ -3,6 +3,33 @@ import numpy as np
 import os
 import cv2
 from torch import utils
+import torch
+
+from helpers import data_utils
+
+def get_dataloaders(cfg):
+    dataset = InpaintingDataset(cfg)
+
+    train_size = int(cfg.data.trn_frac * len(dataset))
+    val_size = len(dataset) - train_size
+    train_dataset, val_dataset = utils.data.random_split(dataset, [train_size, val_size])
+
+    train_dataloader = torch.utils.data.DataLoader(
+        train_dataset,
+        batch_size=cfg.data.batch_size,
+        shuffle=True,
+        num_workers=cfg.data.num_workers,
+    )
+
+    val_dataloader = torch.utils.data.DataLoader(
+        val_dataset,
+        batch_size=cfg.data.batch_size,
+        shuffle=False,
+        num_workers=cfg.data.num_workers,
+    )
+
+    return train_dataloader, val_dataloader
+
 
 class InpaintingDataset(utils.data.Dataset):
     def __init__(self, cfg):
@@ -22,49 +49,16 @@ class InpaintingDataset(utils.data.Dataset):
     def __len__(self):
         return len(self.texture_paths)
             
-    def _normalise_image(self, image):
-        image = np.array(image) / 255  # [0, 1]
-        image = 2 * image - 1  # [-1, 1]
-        return image
-
-    def _denormalise_image(self, image):
-        image = (image + 1) / 2
-        image = np.clip(image, 0, 1)
-        return image
-    
-    def _channels_first(self, image):
-        if len(image.shape) == 3:
-            return np.transpose(image, (2, 0, 1))
-        elif len(image.shape) == 4:
-            return np.transpose(image, (0, 3, 1, 2))
-        else:
-            raise ValueError("Image must be either 3D or 4D tensor")
-    
-    def _channels_last(self, image):
-        if len(image.shape) == 3:
-            return np.transpose(image, (1, 2, 0))
-        elif len(image.shape) == 4:
-            return np.transpose(image, (0, 2, 3, 1))
-        else:
-            raise ValueError("Image must be either 3D or 4D tensor")
-
-    def _load_image_as_array(self, path):
-        image = Image.open(path).convert("RGB")
-        image = np.array(image).astype(np.float32)
-        return image
-
     def __getitem__(self, index):
 
-        diffuse_img = self._load_image_as_array(
-            os.path.join(self.texture_paths[index], "texture_diffuse.png")
-        )
+        diffuse_img = data_utils.load_image_as_array(os.path.join(self.texture_paths[index], "texture_diffuse.png"))
         partial_img = diffuse_img * self.mask
 
-        diffuse_img = self._normalise_image(diffuse_img)
-        partial_img = self._normalise_image(partial_img)
+        diffuse_img = data_utils.normalise_image(diffuse_img)
+        partial_img = data_utils.normalise_image(partial_img)
 
-        diffuse_img = self._channels_first(diffuse_img)
-        partial_img = self._channels_first(partial_img)
+        diffuse_img = data_utils.channels_first(diffuse_img)
+        partial_img = data_utils.channels_first(partial_img)
 
         grid_data = {
             "partial_diffuse_img": partial_img,

@@ -1,37 +1,45 @@
-import pytorch_lightning as pl
-import torch
-
-from helpers.callbacks import prepare_wandb_logger
-from helpers.callbacks import prepare_callbacks
-from helpers.callbacks import prepare_data_loaders
-from helpers.callbacks import prepare_pl_module
-
 from omegaconf import OmegaConf
 from dotenv import load_dotenv
 load_dotenv()  
 
-def main():
+import pytorch_lightning as pl
+from pytorch_lightning.loggers import WandbLogger
 
+from helpers.dataset import get_dataloaders
+from helpers.callbacks import get_callbacks
+
+def train():
+
+    print("-"*50)
     cfg = OmegaConf.load("configs/train.yaml")
+    print(cfg)
+    print("-"*50)
 
-    wandb_logger = prepare_wandb_logger(cfg)
-    pl_module = prepare_pl_module(cfg)
-    return
+    pl.seed_everything(cfg.seed)
 
-    # TODO: resolve seed
-    trn_loader, val_loader = prepare_data_loaders(cfg)
-    callbacks = prepare_callbacks(cfg)
-
-    trainer = pl.Trainer(
-        max_epochs=20,
-        logger=wandb_logger,
-        callbacks=callbacks,
-        log_every_n_steps=10,
-        accelerator="cuda" if torch.cuda.is_available() else "cpu",
-        devices=1 if torch.cuda.is_available() else None,
+    logger = WandbLogger(
+        project=cfg.logger.project, 
+        save_dir="outputs/",
+        log_model="all", 
+        tags=cfg.logger.tags,
     )
 
-    trainer.fit(pl_module, trn_loader, val_loader)
+    trn_dataloader, val_dataloader = get_dataloaders(cfg)
+    diffusion = get_diffusion(cfg)
+    model = WeightDiffusionTransformer(cfg)
+    pl_module = WeightDenoiser(cfg=cfg, model=model, diffusion=diffusion)
+    callbacks = get_callbacks(cfg)
+
+    trainer = pl.Trainer(
+        max_epochs=cfg.trainer.max_epochs,
+        accelerator=cfg.trainer.accelerator,
+        devices=cfg.trainer.devices,
+        logger=logger,
+        callbacks=callbacks,
+        deterministic=True,
+    )
+
+    trainer.fit(pl_module, trn_dataloader, val_dataloader)
 
 if __name__ == "__main__":
-    main()
+    train()

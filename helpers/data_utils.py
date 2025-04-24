@@ -264,3 +264,35 @@ def modify_texture_images_small_center(
         roughness.save(os.path.join(output_dir, "roughness.png"))
 
     print(f"Logo pasted and saved to {output_dir}")
+
+
+def normalise_image(image):
+    image = np.array(image) / 255  # [0, 1]
+    image = 2 * image - 1  # [-1, 1]
+    return image
+
+def denormalise_image(image):
+    image = (image + 1) / 2
+    image = np.clip(image, 0, 1)
+    return image
+
+def channels_first(image):
+    if len(image.shape) == 3:
+        return np.transpose(image, (2, 0, 1))
+    elif len(image.shape) == 4:
+        return np.transpose(image, (0, 3, 1, 2))
+    else:
+        raise ValueError("Image must be either 3D or 4D tensor")
+
+def channels_last(image):
+    if len(image.shape) == 3:
+        return np.transpose(image, (1, 2, 0))
+    elif len(image.shape) == 4:
+        return np.transpose(image, (0, 2, 3, 1))
+    else:
+        raise ValueError("Image must be either 3D or 4D tensor")
+
+def load_image_as_array(path):
+    image = Image.open(path).convert("RGB")
+    image = np.array(image).astype(np.float32)
+    return image
