@@ -20,7 +20,6 @@ class GarmentDenoiser(nn.Module):
         self.prompt_embeds = self._get_encoded_prompt(prompt)
         null_prompt = ""
         self.null_prompt_embeds = self._get_encoded_prompt(null_prompt)
-        self.generator = torch.Generator(device=self.device) 
 
 
     def _get_encoded_prompt(self, prompt):
@@ -130,7 +129,7 @@ class GarmentDenoiser(nn.Module):
 
         if dropout_prob > 0:
             # Text
-            random_p = torch.rand(bsz, device=self.device, generator=self.generator)
+            random_p = torch.rand(bsz, device=self.device)
             prompt_mask = random_p < 2 * dropout_prob
             prompt_mask = prompt_mask.reshape(bsz, 1, 1)
             null_conditioning = self.null_prompt_embeds.repeat(bsz, 1, 1)
@@ -147,47 +146,27 @@ class GarmentDenoiser(nn.Module):
         
         return text_embeds, partial_image_embeds
 
-    def _ddim_loss(self, latents, noisy_latents, timesteps, model_pred, primary_loss):
-        alphas_cumprod = self.noise_scheduler.alphas_cumprod.to(self.device)
-        alpha_t = alphas_cumprod[timesteps]  # Alpha_t at current timestep
-        
-        sqrt_alpha_t = alpha_t.sqrt().view(-1, 1, 1, 1)
-        sqrt_one_minus_alpha_t = (1 - alpha_t).sqrt().view(-1, 1, 1, 1)
 
-        # DDIM reverse step: estimate the noise-free latents at t=0
-        ddim_pred = (
-            noisy_latents  # Current latent scaled by next alpha  
-            - sqrt_one_minus_alpha_t * model_pred  # Remove noise proportional to the next timestep
-        ) / sqrt_alpha_t
-        
-        ddim_loss = F.mse_loss(ddim_pred, latents, reduction="mean")
-        
-        # Combine the losses with a weighting factor (adjust `lambda_ddim` as needed)
-        lambda_ddim = 0.5  # Adjust this weight based on your experiments
-        loss = primary_loss + lambda_ddim * ddim_loss
+    def forward(self, full_diffuse_img, partial_img):
 
-        return loss
+        bsz = full_diffuse_img.shape[0]
 
-
-    def forward(self, batch):
-
-        latents = self.vae_diffuse.encode(batch["full_diffuse_img"]).latent_dist.sample()
+        # Noisy input
+        latents = self.vae_diffuse.encode(full_diffuse_img).latent_dist.sample()
         latents = latents * self.vae_diffuse.config.scaling_factor
-        bsz = latents.shape[0]
 
         noise = torch.randn_like(latents)
-        timesteps = torch.randint(0, self.noise_scheduler.config.num_train_timesteps, (bsz,), device=latents.device)
-        timesteps = timesteps.long()
+        timesteps = torch.randint(0, self.noise_scheduler.config.num_train_timesteps, (bsz,)).long()
         noisy_latents = self.noise_scheduler.add_noise(latents, noise, timesteps)
 
+        # Conditioning
         text_embeds = self.prompt_embeds.repeat(bsz, 1, 1) 
-        partial_image_embeds = self.vae_diffuse.encode(batch["partial_img"]).latent_dist.mode()
+        partial_image_embeds = self.vae_diffuse.encode(partial_img).latent_dist.mode()
 
         if self.cfg.model.conditioning_dropout_prob > 0:
             text_embeds, partial_image_embeds = self._classifier_free_guidance(
                 text_embeds, partial_image_embeds
             )
-
 
         concatenated_noisy_latents = torch.cat([noisy_latents, partial_image_embeds], dim=1)
 
@@ -196,14 +175,8 @@ class GarmentDenoiser(nn.Module):
         else:
             raise ValueError(f"Unknown prediction type {self.noise_scheduler.config.prediction_type}")
 
+
+        # Denoising
         model_pred = self.unet(concatenated_noisy_latents, timesteps, text_embeds).sample
 
-        primary_loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
-
-        if self.cfg.model.ddim_loss:
-            loss = self._ddim_loss(latents, noisy_latents, timesteps, model_pred, primary_loss)
-        else:
-            loss = primary_loss
-
-
-        return loss
+        return latents, noisy_latents, timesteps, target, model_pred
