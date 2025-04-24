@@ -17,6 +17,8 @@ class GarmentDenoiser(nn.Module):
         prompt = "fill the missing parts of a fabric texture matching the existing colors and style"
         self.register_buffer("prompt_embeds", self._get_encoded_prompt(prompt))
         self.register_buffer("null_prompt_embeds", self._get_encoded_prompt(""))
+        self.register_buffer("alphas_cumprod", self.noise_scheduler.alphas_cumprod)
+
 
     def _get_encoded_prompt(self, prompt):
 
@@ -142,37 +144,14 @@ class GarmentDenoiser(nn.Module):
         
         return text_embeds, partial_image_embeds
 
-
-    def forward(self, full_diffuse_img, partial_img):
-
-        bsz = full_diffuse_img.shape[0]
-
-        # Noisy input
+    def encode_latents(self, full_diffuse_img):
+        # returns z ∼ q(z|x) × scaling_factor
         latents = self.vae_diffuse.encode(full_diffuse_img).latent_dist.sample()
-        latents = latents * self.vae_diffuse.config.scaling_factor
+        return latents * self.vae_diffuse.config.scaling_factor
 
-        noise = torch.randn_like(latents)
-        timesteps = torch.randint(0, self.noise_scheduler.config.num_train_timesteps, (bsz,)).long()
-        noisy_latents = self.noise_scheduler.add_noise(latents, noise, timesteps)
+    def encode_partial(self, partial_img):
+        # returns the deterministic encoding of the partial image
+        return self.vae_diffuse.encode(partial_img).latent_dist.mode()
 
-        # Conditioning
-        text_embeds = self.prompt_embeds.repeat(bsz, 1, 1) 
-        partial_image_embeds = self.vae_diffuse.encode(partial_img).latent_dist.mode()
-
-        if self.cfg.model.conditioning_dropout_prob > 0:
-            text_embeds, partial_image_embeds = self._classifier_free_guidance(
-                text_embeds, partial_image_embeds
-            )
-
-        concatenated_noisy_latents = torch.cat([noisy_latents, partial_image_embeds], dim=1)
-
-        if self.noise_scheduler.config.prediction_type == "epsilon":
-            target = noise
-        else:
-            raise ValueError(f"Unknown prediction type {self.noise_scheduler.config.prediction_type}")
-
-
-        # Denoising
-        model_pred = self.unet(concatenated_noisy_latents, timesteps, text_embeds).sample
-
-        return latents, noisy_latents, timesteps, target, model_pred
+    def denoise_step(self, noisy_latents, timesteps, text_embeds):
+        return self.unet(noisy_latents, timesteps, text_embeds).sample
