@@ -73,7 +73,7 @@ class GarmentInpainterModule(pl.LightningModule):
         losses = self.compute_losses(latents, noisy_latents, timesteps, model_pred, target)
         self.log_dict({f"train/{k}": v for k,v in losses.items() if v is not None},
                     on_step=True, on_epoch=False, prog_bar=True)
-
+        self.log("step", self.global_step, prog_bar=False)
 
         
         return losses["loss"]

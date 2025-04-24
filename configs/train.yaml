@@ -22,22 +22,16 @@ model:
 
 # todo: gradient checkpointing
 trainer:
-  max_epochs: 1000
+  max_steps: 28000
   accelerator: gpu
   devices: 1
-  checkpoint_every_n_epochs: 250
-  accumulate_grad_batches: 1
+  checkpoint_every_n_epochs: 4000
+  checkpoints_total_limit: 5
+  accumulate_grad_batches: 1 
+  max_grad_norm: 1 
 
 ######################################
-output_dir: "checkpoints/pbr_texture_completion_reproduce"
-max_train_steps: 28000
-checkpointing_steps: 4000
-checkpoints_total_limit: 5
-max_grad_norm: 1
-lr_warmup_steps: 0
 
-
-######################################
 
 hydra:
   run:

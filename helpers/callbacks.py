@@ -2,7 +2,15 @@ from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 
 def get_callbacks(cfg):
  
-    checkpoint_cb = ModelCheckpoint(every_n_epochs=cfg.trainer.checkpoint_every_n_epochs) 
+    checkpoint_cb = ModelCheckpoint(
+        dirpath="checkpoints/",
+        every_n_train_steps=cfg.trainer.checkpoint_every_n_train_steps,
+        save_top_k=cfg.trainer.checkpoint_total_limit,
+        monitor="step",  # Dummy monitor so it saves by step
+        mode="max",
+    )
+
+
     lr_monitor = LearningRateMonitor(logging_interval="epoch")
     callbacks = [checkpoint_cb, lr_monitor]
 
