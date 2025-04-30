@@ -12,6 +12,8 @@ class GarmentInpainterModule(pl.LightningModule):
         self.save_hyperparameters(cfg)
 
         self.cfg = cfg
+        self.lr = cfg.optim.lr
+        self.weight_decay = cfg.optim.weight_decay
         self.model = GarmentDenoiser(cfg)
 
         self.prompt = "fill the missing parts of a fabric texture matching the existing colors and style"
@@ -103,10 +105,8 @@ class GarmentInpainterModule(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
             self.model.parameters(),
-            lr=self.cfg.model.learning_rate,
-            weight_decay=self.cfg.model.weight_decay,
+            lr=self.lr,
+            weight_decay=self.weight_decay,
         )
         
-        return {
-            "optimizer": optimizer,
-        }
+        return optimizer

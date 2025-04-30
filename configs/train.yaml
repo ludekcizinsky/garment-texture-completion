@@ -16,9 +16,24 @@ data:
   batch_size: 20 # baseline: 64
   res: 512 # baseline: 512
 
-model:
-  learning_rate: 1e-5 # baseline: 5e-5 assuming bs=64
+# Optimisation
+optim:
+  lr: 1e-5
   weight_decay: 1e-2
+  warmup_steps: 100
+
+  # Scheduler - reduce on plateau
+  plateau_patience: 10 # how many val/f1 to wait before reducing
+  plateau_factor: 0.5 # reduce by this factor
+  min_lr: 1e-6  # minimum learning rate
+  plateau_mode: "min" # mode for plateau scheduler
+  plateau_metric: "val/loss" # metric to monitor for plateau scheduler
+
+  # Gradient clipping
+  max_grad_norm: 1.0 # gradient clipping
+  grad_norm_type: 2.0 # norm type for gradient clipping
+
+model:
   vae_path: "/home/cizinsky/garment-texture-completion/data_generation/dresscode/material_gen"
   diffusion_path: "stable-diffusion-v1-5/stable-diffusion-v1-5"
   conditioning_dropout_prob: 0.05 # classifier-free guidance / baseline: 0.05
@@ -31,7 +46,6 @@ trainer:
   checkpoints_total_limit: 2
   checkpoint_every_n_train_steps: 2000 # baseline: 4000
   val_check_interval: 2000 # in steps / baseline: one per epoch
-  max_grad_norm: 1 # gradient clipping / baseline: 1
   precision: 16-mixed
   log_every_n_steps: 10 # baseline: 1
 
