@@ -13,7 +13,7 @@ def get_callbacks(cfg, exp_name):
     
     checkpoint_cb = ModelCheckpoint(
         dirpath=f"{cfg.checkpoint_dir}/{exp_name}",
-        every_n_train_steps=cfg.trainer.checkpoint_every_n_train_steps+1,
+        every_n_train_steps=cfg.trainer.checkpoint_every_n_train_steps,
         save_top_k=cfg.trainer.checkpoints_total_limit,
         monitor="step",  # Dummy monitor so it saves by step
         mode="max",
@@ -75,6 +75,8 @@ class WarmupPlateauScheduler(Callback):
         super().__init__()
         self.cfg = cfg
         self.warmup_steps = self.cfg.optim.warmup_steps
+        self._loaded_state = None  
+
 
     def on_train_start(self, trainer, pl_module):
         opt = trainer.optimizers[0]
@@ -91,6 +93,12 @@ class WarmupPlateauScheduler(Callback):
             factor=self.cfg.optim.plateau_factor,
             min_lr=self.cfg.optim.min_lr,
         )
+        if self._loaded_state:
+            if self._loaded_state.get("warmup_scheduler_state"):
+                self.warmup_scheduler.load_state_dict(self._loaded_state["warmup_scheduler_state"])
+            if self._loaded_state.get("plateau_scheduler_state"):
+                self.plateau_scheduler.load_state_dict(self._loaded_state["plateau_scheduler_state"])
+            self._loaded_state = None  # Clear after loading
 
 
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
@@ -118,9 +126,7 @@ class WarmupPlateauScheduler(Callback):
         }
 
     def on_load_checkpoint(self, trainer, pl_module, callback_state):
-        # Restore the state of the schedulers
-        self.warmup_scheduler.load_state_dict(callback_state["warmup_scheduler_state"])
-        self.plateau_scheduler.load_state_dict(callback_state["plateau_scheduler_state"])
+        self._loaded_state = callback_state
 
 
 class GradNormWithClip(Callback):
