@@ -1,4 +1,7 @@
 seed: 42
+debug: false
+output_dir: outputs
+checkpoint_dir: /scratch/izar/cizinsky/garment-completion/checkpoints
 
 logger:
   project: pbr-generation
@@ -8,7 +11,7 @@ data:
   trn_frac: 0.9
   pbr_maps_path: "/scratch/izar/cizinsky/garment-completion/pbr_maps/dresscode"
   mask_path: "/scratch/izar/cizinsky/garment-completion/masks/shirt.png"
-  num_workers: 0
+  num_workers: 19
   batch_size: 1
   res: 512
 

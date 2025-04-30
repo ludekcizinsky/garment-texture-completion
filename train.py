@@ -1,11 +1,13 @@
 import hydra
 from omegaconf import DictConfig, OmegaConf
 
+from datetime import datetime
+
 from dotenv import load_dotenv
 load_dotenv()  
 
 import pytorch_lightning as pl
-from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.loggers import WandbLogger, TensorBoardLogger
 
 from helpers.dataset import get_dataloaders
 from helpers.callbacks import get_callbacks
@@ -20,16 +22,27 @@ def train(cfg: DictConfig):
 
     pl.seed_everything(cfg.seed)
 
-    logger = WandbLogger(
-        project=cfg.logger.project, 
-        save_dir="outputs/",
-        log_model="all", 
-        tags=cfg.logger.tags,
-    )
+
+    if not cfg.debug:
+        logger = WandbLogger(
+            project=cfg.logger.project,
+            save_dir=cfg.output_dir,
+            log_model=False,
+            tags=cfg.logger.tags,
+        )
+        exp_name = cfg.logger.experiment_name
+    else:
+        run_version = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        logger = TensorBoardLogger(
+            save_dir=cfg.output_dir,
+            name="debug",
+            version=run_version,
+        )
+        exp_name = f"debug_{run_version}"
 
     trn_dataloader, val_dataloader = get_dataloaders(cfg)
     pl_module = GarmentInpainterModule(cfg)
-    callbacks = get_callbacks(cfg)
+    callbacks = get_callbacks(cfg, exp_name)
 
     trainer = pl.Trainer(
         max_steps=cfg.trainer.max_steps,
