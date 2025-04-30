@@ -1,4 +1,6 @@
 from tqdm import tqdm
+import os
+import glob
 
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.callbacks import Callback
@@ -21,7 +23,20 @@ def get_callbacks(cfg, exp_name):
     progress_cb = StepProgressBar()
     callbacks = [checkpoint_cb, scheduler_cb, grad_norm_cb, progress_cb]
 
-    return callbacks
+    ckpt_path = find_checkpoint_to_resume_from(cfg, exp_name)
+
+    return callbacks, ckpt_path
+
+def find_checkpoint_to_resume_from(cfg, run_name):
+    ckpt_path = None
+    if cfg.logger.run_id:
+        exp_folder = os.path.join(cfg.checkpoint_dir, run_name)
+        all_ckpts = glob.glob(os.path.join(exp_folder, "*.ckpt"))
+        if all_ckpts:
+            ckpt_path = sorted(all_ckpts, key=os.path.getmtime)[-1]
+
+    return ckpt_path
+
 
 class StepProgressBar(Callback):
     def __init__(self):

@@ -7,12 +7,13 @@ max_train_samples: 1792000 # 28000*64
 logger:
   project: pbr-generation
   tags: [dev]
+  run_id: tqtzd06l
 
 data:
   trn_frac: 0.95
   pbr_maps_path: "/scratch/izar/cizinsky/garment-completion/pbr_maps/dresscode"
   mask_path: "/scratch/izar/cizinsky/garment-completion/masks/shirt.png"
-  num_workers: 19
+  num_workers: 10
   batch_size: 20 # baseline: 64
   res: 512 # baseline: 512
 
