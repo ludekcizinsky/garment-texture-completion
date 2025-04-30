@@ -43,13 +43,13 @@ class StepProgressBar(Callback):
         super().__init__()
         self.pbar = None
 
-    def on_fit_start(self, trainer, pl_module):
+    def on_train_start(self, trainer, pl_module):
         # total steps you plan to run (from Trainer.max_steps)
         total_steps = trainer.max_steps
         
         # create the bar
         self.pbar = tqdm(total=total_steps, desc="Training", unit="step")
-        
+
         # if we're resuming, advance to where we left off
         start = trainer.global_step
         if start:
@@ -59,7 +59,7 @@ class StepProgressBar(Callback):
         # advance one step each time the optimizer steps
         self.pbar.update(1)
 
-    def on_fit_end(self, trainer, pl_module):
+    def on_train_end(self, trainer, pl_module):
         # close it at the very end
         self.pbar.close()
 
@@ -109,6 +109,18 @@ class WarmupPlateauScheduler(Callback):
             val_metric = trainer.callback_metrics.get(metric)
             if val_metric is not None:
                 self.plateau_scheduler.step(val_metric)
+
+    def on_save_checkpoint(self, trainer, pl_module, checkpoint):
+        # Save the state of the schedulers
+        return {
+            "warmup_scheduler_state": self.warmup_scheduler.state_dict(),
+            "plateau_scheduler_state": self.plateau_scheduler.state_dict(),
+        }
+
+    def on_load_checkpoint(self, trainer, pl_module, callback_state):
+        # Restore the state of the schedulers
+        self.warmup_scheduler.load_state_dict(callback_state["warmup_scheduler_state"])
+        self.plateau_scheduler.load_state_dict(callback_state["plateau_scheduler_state"])
 
 
 class GradNormWithClip(Callback):
