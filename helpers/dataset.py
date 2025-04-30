@@ -95,7 +95,6 @@ class ResumableInpaintingIterableDataset(IterableDataset):
             start       = self.worker_positions.get(wid, wid)
             step        = n_workers
 
-        # walk through your precomputed indices list
         for idx_pos in range(start, len(self.indices), step):
             real_idx = self.indices[idx_pos]
             item     = self.dataset[real_idx]
@@ -105,6 +104,7 @@ class ResumableInpaintingIterableDataset(IterableDataset):
                 self.position = idx_pos + 1
             else:
                 self.worker_positions[wid] = idx_pos + step
+                print(f"Worker {wid} position: {self.worker_positions[wid]}")
 
             yield item
 
@@ -117,4 +117,7 @@ class ResumableInpaintingIterableDataset(IterableDataset):
     def load_state_dict(self, state):
         self.position         = state.get("position", 0)
         self.worker_positions = state.get("worker_positions", {})
+        print("------- Dataset state loaded -------")
+        print(f"position: {self.position}")
+        print(f"worker_positions: {self.worker_positions}")
  

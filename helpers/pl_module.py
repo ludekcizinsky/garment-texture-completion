@@ -7,7 +7,7 @@ from helpers.losses import ddim_loss as ddim_loss_f
 
 
 class GarmentInpainterModule(pl.LightningModule):
-    def __init__(self, cfg, trn_dataloader, val_dataloader):
+    def __init__(self, cfg):
         super().__init__()
         self.save_hyperparameters(cfg)
 
@@ -15,9 +15,6 @@ class GarmentInpainterModule(pl.LightningModule):
         self.lr = cfg.optim.lr
         self.weight_decay = cfg.optim.weight_decay
         self.model = GarmentDenoiser(cfg)
-
-        self.trn_dataloader = trn_dataloader
-        self.val_dataloader = val_dataloader
 
         self.prompt = "fill the missing parts of a fabric texture matching the existing colors and style"
         self.null_prompt = ""
@@ -115,27 +112,11 @@ class GarmentInpainterModule(pl.LightningModule):
         return optimizer
 
     def on_save_checkpoint(self, checkpoint):
-        # Save the state of the training dataset if available
-        if hasattr(self, "trn_dataloader"):
-            dataset = getattr(self.trn_dataloader, "dataset", None)
-            if dataset and hasattr(dataset, "state_dict"):
-                checkpoint['train_dataset_state'] = dataset.state_dict()
+        trn_dataset = self.trainer.train_dataloader.dataset
+        checkpoint['train_dataset_state'] = trn_dataset.state_dict()
+        val_dataset = self.trainer.val_dataloaders.dataset
+        checkpoint['val_dataset_state'] = val_dataset.state_dict()
 
-        if hasattr(self, "val_dataloader"):
-            dataset = getattr(self.val_dataloader, "dataset", None)
-            if dataset and hasattr(dataset, "state_dict"):
-                checkpoint['val_dataset_state'] = dataset.state_dict()
-
-    def on_load_checkpoint(self, checkpoint):
-        # Restore the state of the training dataset if available
-        if hasattr(self, "trn_dataloader"):
-            dataset = getattr(self.trn_dataloader, "dataset", None)
-            if dataset and hasattr(dataset, "load_state_dict"):
-                if 'train_dataset_state' in checkpoint:
-                     dataset.load_state_dict(checkpoint['train_dataset_state'])
-
-        if hasattr(self, "val_dataloader"):
-            dataset = getattr(self.val_dataloader, "dataset", None)
-            if dataset and hasattr(dataset, "load_state_dict"):
-                if 'val_dataset_state' in checkpoint:
-                    dataset.load_state_dict(checkpoint['val_dataset_state'])
+        print("------- Dataset state saved -------")
+        print(f"train_dataset_state: {checkpoint['train_dataset_state']}")
+        print(f"val_dataset_state: {checkpoint['val_dataset_state']}")

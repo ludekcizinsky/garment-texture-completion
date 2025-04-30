@@ -75,7 +75,7 @@ class WarmupPlateauScheduler(Callback):
         super().__init__()
         self.cfg = cfg
         self.warmup_steps = self.cfg.optim.warmup_steps
-        self._loaded_state = None  
+        self._resume_state = None
 
 
     def on_train_start(self, trainer, pl_module):
@@ -93,12 +93,16 @@ class WarmupPlateauScheduler(Callback):
             factor=self.cfg.optim.plateau_factor,
             min_lr=self.cfg.optim.min_lr,
         )
-        if self._loaded_state:
-            if self._loaded_state.get("warmup_scheduler_state"):
-                self.warmup_scheduler.load_state_dict(self._loaded_state["warmup_scheduler_state"])
-            if self._loaded_state.get("plateau_scheduler_state"):
-                self.plateau_scheduler.load_state_dict(self._loaded_state["plateau_scheduler_state"])
-            self._loaded_state = None  # Clear after loading
+
+        if self._resume_state:
+            warmup_state = self._resume_state.get("warmup_scheduler")
+            plateau_state = self._resume_state.get("plateau_scheduler")
+
+            if warmup_state:
+                self.warmup_scheduler.load_state_dict(warmup_state)
+
+            if plateau_state:
+                self.plateau_scheduler.load_state_dict(plateau_state)
 
 
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
@@ -119,15 +123,19 @@ class WarmupPlateauScheduler(Callback):
                 self.plateau_scheduler.step(val_metric)
 
     def on_save_checkpoint(self, trainer, pl_module, checkpoint):
-        # Save the state of the schedulers
-        return {
-            "warmup_scheduler_state": self.warmup_scheduler.state_dict(),
-            "plateau_scheduler_state": self.plateau_scheduler.state_dict(),
+        # Save the state of the warmup scheduler
+        if hasattr(self, "warmup_scheduler"):
+            checkpoint["warmup_scheduler"] = self.warmup_scheduler.state_dict()
+
+        # Save the state of the plateau scheduler
+        if hasattr(self, "plateau_scheduler"):
+            checkpoint["plateau_scheduler"] = self.plateau_scheduler.state_dict()
+
+    def on_load_checkpoint(self, trainer, pl_module, checkpoint):
+        self._resume_state = {
+            "warmup_scheduler": checkpoint.get("warmup_scheduler"),
+            "plateau_scheduler": checkpoint.get("plateau_scheduler"),
         }
-
-    def on_load_checkpoint(self, trainer, pl_module, callback_state):
-        self._loaded_state = callback_state
-
 
 class GradNormWithClip(Callback):
     def __init__(self, cfg):
