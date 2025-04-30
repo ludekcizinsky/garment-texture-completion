@@ -5,6 +5,8 @@ import cv2
 from torch import utils
 import torch
 from torch.utils.data import IterableDataset, get_worker_info
+from multiprocessing import Manager
+
 
 from helpers import data_utils
 
@@ -16,8 +18,15 @@ def get_dataloaders(cfg):
     split   = int(cfg.data.trn_frac * N)
     train_idx, val_idx = all_idx[:split].tolist(), all_idx[split:].tolist()
 
+    # Create a Manager + shared dict for worker positions
+    manager = Manager()
+    trn_shared_worker_positions = manager.dict()
 
-    train_ds = ResumableInpaintingIterableDataset(cfg, indices=train_idx)
+    train_ds = ResumableInpaintingIterableDataset(
+        cfg,
+        indices=train_idx,
+        shared_worker_positions=trn_shared_worker_positions
+    )
     train_loader = torch.utils.data.DataLoader(
         train_ds,
         batch_size=cfg.data.batch_size,
@@ -25,12 +34,17 @@ def get_dataloaders(cfg):
         shuffle=False,     # must be False for IterableDataset
     )
 
-    val_ds = ResumableInpaintingIterableDataset(cfg, indices=val_idx)
+    val_shared_worker_positions = manager.dict()
+    val_ds = ResumableInpaintingIterableDataset(
+        cfg,
+        indices=val_idx,
+        shared_worker_positions=val_shared_worker_positions
+    )
     val_loader = torch.utils.data.DataLoader(
         val_ds,
         batch_size=cfg.data.batch_size,
         num_workers=cfg.data.num_workers,
-        shuffle=False,     # must be False for IterableDataset
+        shuffle=False,
     )
 
     return train_loader, val_loader
@@ -76,48 +90,48 @@ class InpaintingDataset(utils.data.Dataset):
         return grid_data
     
 class ResumableInpaintingIterableDataset(IterableDataset):
-    def __init__(self, cfg, indices=None):
+    def __init__(self, cfg, indices=None, shared_worker_positions=None):
         super().__init__()
         self.dataset = InpaintingDataset(cfg)
         self.indices = indices if indices is not None else list(range(len(self.dataset)))
-        # cursors for resume
-        self.position = 0
-        self.worker_positions = {}
+        self.dataset_length = len(self.indices)
+
+        # Use the shared Manager dict if provided, else fall back to a local dict
+        if shared_worker_positions is None:
+            self.worker_positions = {}
+        else:
+            self.worker_positions = shared_worker_positions
 
     def __iter__(self):
         worker_info = get_worker_info()
         if worker_info is None:
-            # single‐process
-            start, step, wid = self.position, 1, None
+            wid, n_workers = 0, 1
         else:
-            wid         = worker_info.id
-            n_workers   = worker_info.num_workers
-            start       = self.worker_positions.get(wid, wid)
-            step        = n_workers
+            wid       = worker_info.id
+            n_workers = worker_info.num_workers
 
-        for idx_pos in range(start, len(self.indices), step):
-            real_idx = self.indices[idx_pos]
-            item     = self.dataset[real_idx]
+        # Start from the last absolute position for this worker (or wid for a fresh start)
+        pos = self.worker_positions.get(wid, wid)
 
-            # advance cursor(s)
-            if wid is None:
-                self.position = idx_pos + 1
-            else:
-                self.worker_positions[wid] = idx_pos + step
-                print(f"Worker {wid} position: {self.worker_positions[wid]}")
+        # Infinite loop: cycle through self.indices over and over
+        while True:
+            real_idx = self.indices[pos % self.dataset_length]
+            item = self.dataset[real_idx]
+
+            # advance by n_workers so we stagger among workers
+            pos += n_workers
+            self.worker_positions[wid] = pos     # writes back into the Manager dict
 
             yield item
 
     def state_dict(self):
-        return {
-            "position": self.position,
-            "worker_positions": self.worker_positions,
-        }
+        # Convert the (possibly proxy) dict into a regular dict for serialization
+        return {"worker_positions": dict(self.worker_positions)}
 
     def load_state_dict(self, state):
-        self.position         = state.get("position", 0)
-        self.worker_positions = state.get("worker_positions", {})
-        print("------- Dataset state loaded -------")
-        print(f"position: {self.position}")
-        print(f"worker_positions: {self.worker_positions}")
- 
+        loaded = state.get("worker_positions", {})
+        # assume self.worker_positions is still the Manager.dict proxy
+        self.worker_positions.clear()
+        self.worker_positions.update(loaded)
+        print(f"Worker positions loaded: {self.worker_positions}")
+        print("Type of worker_positions:", type(self.worker_positions))

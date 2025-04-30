@@ -120,3 +120,9 @@ class GarmentInpainterModule(pl.LightningModule):
         print("------- Dataset state saved -------")
         print(f"train_dataset_state: {checkpoint['train_dataset_state']}")
         print(f"val_dataset_state: {checkpoint['val_dataset_state']}")
+
+    def on_load_checkpoint(self, checkpoint):
+        trn_dataset = self.trainer.train_dataloader.dataset
+        trn_dataset.load_state_dict(checkpoint['train_dataset_state'])
+        val_dataset = self.trainer.val_dataloaders.dataset
+        val_dataset.load_state_dict(checkpoint['val_dataset_state'])
