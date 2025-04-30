@@ -13,7 +13,7 @@ def get_callbacks(cfg, exp_name):
     
     checkpoint_cb = ModelCheckpoint(
         dirpath=f"{cfg.checkpoint_dir}/{exp_name}",
-        every_n_train_steps=cfg.trainer.checkpoint_every_n_train_steps,
+        every_n_train_steps=cfg.trainer.checkpoint_every_n_train_steps+1,
         save_top_k=cfg.trainer.checkpoints_total_limit,
         monitor="step",  # Dummy monitor so it saves by step
         mode="max",
@@ -43,17 +43,26 @@ class StepProgressBar(Callback):
         super().__init__()
         self.pbar = None
 
-    def on_train_start(self, trainer, pl_module):
+    def on_fit_start(self, trainer, pl_module):
+        # total steps you plan to run (from Trainer.max_steps)
         total_steps = trainer.max_steps
+        
+        # create the bar
         self.pbar = tqdm(total=total_steps, desc="Training", unit="step")
+        
+        # if we're resuming, advance to where we left off
+        start = trainer.global_step
+        if start:
+            self.pbar.update(start)
 
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
-        # Advance by one optimizer step.
+        # advance one step each time the optimizer steps
         self.pbar.update(1)
 
-    def on_train_end(self, trainer, pl_module):
-        # Close at the very end of training.
+    def on_fit_end(self, trainer, pl_module):
+        # close it at the very end
         self.pbar.close()
+
 
 class WarmupPlateauScheduler(Callback):
     def __init__(self, cfg):

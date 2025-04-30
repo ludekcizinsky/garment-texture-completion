@@ -35,7 +35,7 @@ def train(cfg: DictConfig):
         devices=cfg.trainer.devices,
         precision=cfg.trainer.precision,
         val_check_interval=cfg.trainer.val_check_interval + 1,
-        log_every_n_steps=cfg.trainer.log_every_n_steps + 1,
+        log_every_n_steps=cfg.trainer.log_every_n_steps,
         logger=logger,
         callbacks=callbacks,
         deterministic=True,

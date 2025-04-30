@@ -4,31 +4,36 @@ import os
 import cv2
 from torch import utils
 import torch
+from torch.utils.data import IterableDataset, get_worker_info
 
 from helpers import data_utils
 
 def get_dataloaders(cfg):
-    dataset = InpaintingDataset(cfg)
+    full_ds = InpaintingDataset(cfg)
+    N = len(full_ds)
 
-    train_size = int(cfg.data.trn_frac * len(dataset))
-    val_size = len(dataset) - train_size
-    train_dataset, val_dataset = utils.data.random_split(dataset, [train_size, val_size])
+    all_idx = np.random.permutation(N)
+    split   = int(cfg.data.trn_frac * N)
+    train_idx, val_idx = all_idx[:split].tolist(), all_idx[split:].tolist()
 
-    train_dataloader = torch.utils.data.DataLoader(
-        train_dataset,
+
+    train_ds = ResumableInpaintingIterableDataset(cfg, indices=train_idx)
+    train_loader = torch.utils.data.DataLoader(
+        train_ds,
         batch_size=cfg.data.batch_size,
-        shuffle=True,
         num_workers=cfg.data.num_workers,
+        shuffle=False,     # must be False for IterableDataset
     )
 
-    val_dataloader = torch.utils.data.DataLoader(
-        val_dataset,
+    val_ds = ResumableInpaintingIterableDataset(cfg, indices=val_idx)
+    val_loader = torch.utils.data.DataLoader(
+        val_ds,
         batch_size=cfg.data.batch_size,
-        shuffle=False,
         num_workers=cfg.data.num_workers,
+        shuffle=False,     # must be False for IterableDataset
     )
 
-    return train_dataloader, val_dataloader
+    return train_loader, val_loader
 
 
 class InpaintingDataset(utils.data.Dataset):
@@ -70,5 +75,46 @@ class InpaintingDataset(utils.data.Dataset):
 
         return grid_data
     
-if __name__ == '__main__':
-    pass
+class ResumableInpaintingIterableDataset(IterableDataset):
+    def __init__(self, cfg, indices=None):
+        super().__init__()
+        self.dataset = InpaintingDataset(cfg)
+        self.indices = indices if indices is not None else list(range(len(self.dataset)))
+        # cursors for resume
+        self.position = 0
+        self.worker_positions = {}
+
+    def __iter__(self):
+        worker_info = get_worker_info()
+        if worker_info is None:
+            # single‐process
+            start, step, wid = self.position, 1, None
+        else:
+            wid         = worker_info.id
+            n_workers   = worker_info.num_workers
+            start       = self.worker_positions.get(wid, wid)
+            step        = n_workers
+
+        # walk through your precomputed indices list
+        for idx_pos in range(start, len(self.indices), step):
+            real_idx = self.indices[idx_pos]
+            item     = self.dataset[real_idx]
+
+            # advance cursor(s)
+            if wid is None:
+                self.position = idx_pos + 1
+            else:
+                self.worker_positions[wid] = idx_pos + step
+
+            yield item
+
+    def state_dict(self):
+        return {
+            "position": self.position,
+            "worker_positions": self.worker_positions,
+        }
+
+    def load_state_dict(self, state):
+        self.position         = state.get("position", 0)
+        self.worker_positions = state.get("worker_positions", {})
+ 

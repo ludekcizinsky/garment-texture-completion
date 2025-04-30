@@ -7,7 +7,7 @@ max_train_samples: 1792000 # 28000*64
 logger:
   project: pbr-generation
   tags: [dev]
-  run_id: tqtzd06l
+  run_id: null # tqtzd06l
 
 data:
   trn_frac: 0.95
