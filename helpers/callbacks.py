@@ -2,7 +2,7 @@ from tqdm import tqdm
 import os
 import glob
 
-from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
+from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.utilities import grad_norm
 

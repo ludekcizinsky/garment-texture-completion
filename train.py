@@ -34,7 +34,7 @@ def train(cfg: DictConfig):
         accelerator=cfg.trainer.accelerator,
         devices=cfg.trainer.devices,
         precision=cfg.trainer.precision,
-        val_check_interval=cfg.trainer.val_check_interval + 1,
+        val_check_interval=cfg.trainer.val_check_interval,
         log_every_n_steps=cfg.trainer.log_every_n_steps,
         logger=logger,
         callbacks=callbacks,
