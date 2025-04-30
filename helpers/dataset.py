@@ -133,5 +133,3 @@ class ResumableInpaintingIterableDataset(IterableDataset):
         # assume self.worker_positions is still the Manager.dict proxy
         self.worker_positions.clear()
         self.worker_positions.update(loaded)
-        print(f"Worker positions loaded: {self.worker_positions}")
-        print("Type of worker_positions:", type(self.worker_positions))
