@@ -12,29 +12,32 @@ data:
   pbr_maps_path: "/scratch/izar/cizinsky/garment-completion/pbr_maps/dresscode"
   mask_path: "/scratch/izar/cizinsky/garment-completion/masks/shirt.png"
   num_workers: 19
-  batch_size: 1
-  res: 512
+  batch_size: 20 # baseline: 8
+  res: 512 # baseline: 512
 
 model:
-  learning_rate: 5e-5
+  learning_rate: 5e-5 # baseline: 5e-5
   weight_decay: 1e-2
   vae_path: "/home/cizinsky/garment-texture-completion/data_generation/dresscode/material_gen"
   diffusion_path: "stable-diffusion-v1-5/stable-diffusion-v1-5"
-  conditioning_dropout_prob: 0.05 # classifier-free guidance
-  ddim_loss: true
+  conditioning_dropout_prob: 0.05 # classifier-free guidance / baseline: 0.05
+  ddim_loss: true # baseline: true
 
 trainer:
-  max_steps: 4 # original: 28000
+  max_steps: 12000 #  baseline: 28000 (with batch size 8)
   accelerator: gpu
   devices: 1
-  checkpoint_every_n_train_steps: 2 # original: 4000
-  checkpoints_total_limit: 5
-  accumulate_grad_batches: 2
-  max_grad_norm: 1 # gradient clipping
+  checkpoint_every_n_train_steps: 2000 # baseline: 4000
+  val_check_interval: 2000 # in steps / baseline: one per epoch
+  checkpoints_total_limit: 2
+  accumulate_grad_batches: 1 # baseline: 1
+  max_grad_norm: 1 # gradient clipping / baseline: 1
   precision: 16-mixed
+  log_every_n_steps: 10 # baseline: 1
+
 
 hydra:
   run:
-    dir: outputs/hydra/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    dir: outputs/hydra/${now:%Y-%m-%d}_${now:%H-%M-%S}
   job:
     chdir: False

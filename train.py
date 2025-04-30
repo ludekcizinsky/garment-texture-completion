@@ -30,7 +30,7 @@ def train(cfg: DictConfig):
             log_model=False,
             tags=cfg.logger.tags,
         )
-        exp_name = cfg.logger.experiment_name
+        exp_name = logger.experiment.name
     else:
         run_version = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         logger = TensorBoardLogger(
