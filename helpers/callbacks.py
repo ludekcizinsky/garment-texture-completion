@@ -81,9 +81,12 @@ class WarmupPlateauScheduler(Callback):
     def on_train_start(self, trainer, pl_module):
         opt = trainer.optimizers[0]
 
+        last_step = trainer.global_step - 1
+        warmup_last = min(last_step, self.warmup_steps - 1)
         self.warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
             opt,
-            lr_lambda=lambda step: min((step + 1) / self.warmup_steps, 1.0)
+            lr_lambda=lambda step: min((step + 1) / self.warmup_steps, 1.0),
+            last_epoch=warmup_last,
         )
 
         self.plateau_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
