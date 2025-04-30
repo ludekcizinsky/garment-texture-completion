@@ -16,6 +16,10 @@ from helpers.pl_module import GarmentInpainterModule
 @hydra.main(config_path="configs", config_name="train.yaml", version_base="1.1")
 def train(cfg: DictConfig):
 
+    if cfg.trainer.max_steps == -1:
+        effective_batch_size = cfg.data.batch_size * cfg.trainer.accumulate_grad_batches
+        cfg.trainer.max_steps = cfg.max_train_samples // effective_batch_size
+
     print("-"*50)
     print(OmegaConf.to_yaml(cfg))  # print config to verify
     print("-"*50)
@@ -45,11 +49,14 @@ def train(cfg: DictConfig):
     callbacks = get_callbacks(cfg, exp_name)
 
     trainer = pl.Trainer(
+        default_root_dir=cfg.output_dir,
         max_steps=cfg.trainer.max_steps,
         accelerator=cfg.trainer.accelerator,
         devices=cfg.trainer.devices,
         gradient_clip_val=cfg.trainer.max_grad_norm,
         precision=cfg.trainer.precision,
+        val_check_interval=cfg.trainer.val_check_interval,
+        log_every_n_steps=cfg.trainer.log_every_n_steps,
         logger=logger,
         callbacks=callbacks,
         deterministic=True,
