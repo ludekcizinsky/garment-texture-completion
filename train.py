@@ -58,6 +58,7 @@ def train(cfg: DictConfig):
         logger=logger,
         callbacks=callbacks,
         deterministic=True,
+        enable_progress_bar=False,
         # avoid epoch based traing
         check_val_every_n_epoch=None, 
         max_epochs=10000,

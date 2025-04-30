@@ -1,3 +1,5 @@
+from tqdm import tqdm
+
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.utilities import grad_norm
@@ -16,10 +18,27 @@ def get_callbacks(cfg, exp_name):
     )
     grad_norm_cb = GradNormWithClip(cfg)
     scheduler_cb =  WarmupPlateauScheduler(cfg)
-    callbacks = [checkpoint_cb, scheduler_cb, grad_norm_cb]
+    progress_cb = StepProgressBar()
+    callbacks = [checkpoint_cb, scheduler_cb, grad_norm_cb, progress_cb]
 
     return callbacks
 
+class StepProgressBar(Callback):
+    def __init__(self):
+        super().__init__()
+        self.pbar = None
+
+    def on_train_start(self, trainer, pl_module):
+        total_steps = trainer.max_steps
+        self.pbar = tqdm(total=total_steps, desc="Training", unit="step")
+
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
+        # Advance by one optimizer step.
+        self.pbar.update(1)
+
+    def on_train_end(self, trainer, pl_module):
+        # Close at the very end of training.
+        self.pbar.close()
 
 class WarmupPlateauScheduler(Callback):
     def __init__(self, cfg):
