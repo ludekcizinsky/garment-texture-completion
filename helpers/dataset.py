@@ -61,6 +61,8 @@ class InpaintingDataset(utils.data.Dataset):
             os.path.join(cfg.data.pbr_maps_path, folder)
             for folder in os.listdir(cfg.data.pbr_maps_path)
         ]
+        self.texture_paths = [path for path in self.texture_paths if os.path.exists(os.path.join(path, "texture_diffuse.png"))]
+
 
         mask = np.array(Image.open(cfg.data.mask_path).convert("L")) # Load mask as grayscale
         mask = cv2.resize(mask, (self.res, self.res), interpolation=cv2.INTER_NEAREST).astype("float32") / 255.0
