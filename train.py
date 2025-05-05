@@ -10,17 +10,12 @@ from helpers.loggers import get_logger
 from helpers.dataset import get_dataloaders
 from helpers.callbacks import get_callbacks
 from helpers.pl_module import GarmentInpainterModule
+from helpers.config import get_correct_config
 
 @hydra.main(config_path="configs", config_name="train.yaml", version_base="1.1")
 def train(cfg: DictConfig):
 
-    if cfg.trainer.max_steps == -1:
-        cfg.trainer.max_steps = cfg.max_train_samples // cfg.data.batch_size
-
-    print("-"*50)
-    print(OmegaConf.to_yaml(cfg))  # print config to verify
-    print("-"*50)
-
+    cfg = get_correct_config(cfg)
     pl.seed_everything(cfg.seed)
 
     logger, run_name = get_logger(cfg)

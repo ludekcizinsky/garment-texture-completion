@@ -1,6 +1,7 @@
 from datetime import datetime
-
 from pytorch_lightning.loggers import WandbLogger, TensorBoardLogger
+from omegaconf import OmegaConf
+import os
 
 def get_logger(cfg):
 
@@ -17,6 +18,13 @@ def get_logger(cfg):
             wandb_kwargs["resume"] = "must"
         logger = WandbLogger(**wandb_kwargs)
         run_name = logger.experiment.name
+
+        # Save the config to the run_id
+        path = os.path.join(cfg.output_dir, "configs", logger.experiment.id, "config.yaml")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            OmegaConf.save(cfg, f)
+
     else:
         run_version = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         logger = TensorBoardLogger(

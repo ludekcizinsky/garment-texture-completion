@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=pbr_gen
-#SBATCH --output=/home/cizinsky/garment-texture-completion/slurm/logs/pbr_gen_output.log
-#SBATCH --error=/home/cizinsky/garment-texture-completion/slurm/logs/pbr_gen_error.log
-#SBATCH --time=2-00:00:00            # 2 days
+#SBATCH --output=/home/cizinsky/garment-texture-completion/outputs/slurm/pbr_gen_output.log
+#SBATCH --error=/home/cizinsky/garment-texture-completion/outputs/slurm/pbr_gen_error.log
+#SBATCH --time=30:00:00            
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4           
 #SBATCH --mem=16G                   

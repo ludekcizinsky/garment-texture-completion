@@ -34,21 +34,26 @@ class DressCodePBRGen:
 		self.vae_roughness.apply(patch_conv)
 
 	def run(self, prompt, out_folder):
-		
-		if not os.path.exists(out_folder):
 
-			with torch.no_grad():
+		with torch.no_grad():
+			
+			all_files = os.listdir(out_folder)
+			if len(all_files) == 3:
+				return
 
-				latents = self.invpipe([prompt], 512, 512, output_type = "latent", return_dict=True)[0]
+			latents = self.invpipe([prompt], 512, 512, output_type = "latent", return_dict=True)[0]
 
+			if not os.path.exists(os.path.join(out_folder, f"texture_diffuse.png")):
 				pt = self.vae_diffuse.decode(latents / self.vae_diffuse.config.scaling_factor, return_dict=False)[0]
 				diffuse = self.invpipe.image_processor.postprocess(pt, output_type="pil", do_denormalize=[True])[0]
 				diffuse.save(os.path.join(out_folder, f"texture_diffuse.png"))
 
+			if not os.path.exists(os.path.join(out_folder, f"texture_normal.png")):
 				pt = self.vae_normal.decode(latents / self.vae_normal.config.scaling_factor, return_dict=False)[0]
 				normal = self.invpipe.image_processor.postprocess(pt, output_type="pil", do_denormalize=[True])[0]
 				normal.save(os.path.join(out_folder, f"texture_normal.png"))
 
+			if not os.path.exists(os.path.join(out_folder, f"texture_roughness.png")):
 				pt = self.vae_roughness.decode(latents / self.vae_roughness.config.scaling_factor, return_dict=False)[0]
 				roughness = self.invpipe.image_processor.postprocess(pt, output_type="pil", do_denormalize=[True])[0]
 				roughness.save(os.path.join(out_folder, f"texture_roughness.png"))
@@ -61,7 +66,7 @@ def download_models_locally():
 	repo_id = "IHe-KaiI/DressCode"
 
 	# Specify the local directory where you want to download the files
-	local_dir = "/home/cizinsky/garment-texture-completion/src/data_gen/dresscode/downloaded_models"
+	local_dir = "/home/cizinsky/garment-texture-completion/data_generation/dresscode/downloaded_models"
 
 	# Download only the 'material_gen' directory
 	snapshot_download(repo_id=repo_id, local_dir=local_dir, allow_patterns="material_gen/*")
@@ -76,10 +81,10 @@ if __name__ == "__main__":
 
 	# Read prompt data
 	project_path = "/home/cizinsky/garment-texture-completion"
-	scratch_path = "/scratch/izar/cizinsky/pbr_dresscode"
+	scratch_path = "/scratch/izar/cizinsky/garment-completion/pbr_maps/dresscode"
 	prompt_data = list()
 	for file_name in ["colours.txt", "patterns.txt", "materials.txt"]:
-		prompt_data.append(read_txt(os.path.join(project_path, "src/data_generation/dresscode/queries", file_name)))
+		prompt_data.append(read_txt(os.path.join(project_path, "data_generation/dresscode/queries", file_name)))
 
 	# Create a combination of the three lists
 	prompts = []
@@ -89,11 +94,14 @@ if __name__ == "__main__":
 				prompts.append(f"{material} {colour} {pattern}")
 
 	# Generate the PBR textures
-	local_dir = f"{project_path}/src/data_generation/dresscode/material_gen"
+	local_dir = f"{project_path}/data_generation/dresscode/material_gen"
 	generator = DressCodePBRGen(local_dir)
 	out_folder = scratch_path
 	if not os.path.exists(out_folder):
 		os.makedirs(out_folder)
+
+	# Debug
+	prompts = prompts[:1000]
 
 	for i, prompt in tqdm(enumerate(prompts), total=len(prompts)):
 
