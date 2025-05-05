@@ -100,9 +100,6 @@ if __name__ == "__main__":
 	if not os.path.exists(out_folder):
 		os.makedirs(out_folder)
 
-	# Debug
-	prompts = prompts[:1000]
-
 	for i, prompt in tqdm(enumerate(prompts), total=len(prompts)):
 
 		# create a subfolder for the output based on the prompt
