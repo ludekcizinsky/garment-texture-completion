@@ -17,6 +17,7 @@ def get_callbacks(cfg, exp_name):
         save_top_k=cfg.trainer.checkpoints_total_limit,
         monitor="step",  # Dummy monitor so it saves by step
         mode="max",
+        save_last=True,
     )
     grad_norm_cb = GradNormWithClip(cfg)
     scheduler_cb =  WarmupPlateauScheduler(cfg)
