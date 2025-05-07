@@ -267,7 +267,9 @@ def modify_texture_images_small_center(
 
 
 def normalise_image(image):
-    image = np.array(image) / 255  # [0, 1]
+    min_img, max_img = np.min(image), np.max(image)
+    if max_img > 1:
+        image = np.array(image) / 255  # [0, 1]
     image = 2 * image - 1  # [-1, 1]
     return image
 

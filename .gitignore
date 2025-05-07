@@ -1,6 +1,7 @@
 # My folders
 checkpoints/
 playground/
+dev.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
