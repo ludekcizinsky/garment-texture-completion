@@ -5,6 +5,7 @@ import pytorch_lightning as pl
 from helpers.model import GarmentDenoiser
 from helpers.losses import ddim_loss as ddim_loss_f
 
+from tqdm import tqdm
 
 class GarmentInpainterModule(pl.LightningModule):
     def __init__(self, cfg, trn_dataloader, val_dataloader):
@@ -28,7 +29,7 @@ class GarmentInpainterModule(pl.LightningModule):
         self.null_prompt_embeds = self.model._get_encoded_prompt(self.null_prompt).to(self.device, dtype=self._amp_dtype())
 
     def _amp_dtype(self):
-        return torch.float16 if self.trainer.precision == "16-mixed" else torch.float32
+        return torch.float16 if self.cfg.trainer.precision == "16-mixed" else torch.float32
 
 
     def forward(self, noisy_latents, timesteps, text_embeds, partial_image_embeds):
@@ -125,3 +126,41 @@ class GarmentInpainterModule(pl.LightningModule):
         trn_dataset.load_state_dict(checkpoint['train_dataset_state'])
         val_dataset = self.val_dataloader.dataset
         val_dataset.load_state_dict(checkpoint['val_dataset_state'])
+
+    def inference(self, partial_diffuse_imgs, num_inference_steps=50, strength=1.0):
+        self.eval()  # Set the model to evaluation mode
+        with torch.no_grad():  # Disable gradient computation
+            bsz = partial_diffuse_imgs.shape[0]
+            # 1) Encode the partial images
+            latents = self.model.encode_latents(partial_diffuse_imgs)
+
+            # 2) Prepare scheduler & timesteps
+            self.model.noise_scheduler.set_timesteps(num_inference_steps)
+            timesteps = self.model.noise_scheduler.timesteps
+
+
+            # 3) Add noise at the chosen timestep
+            t_start = torch.tensor([timesteps[int(num_inference_steps * strength) - 1]], device=latents.device)
+            noise   = torch.randn_like(latents)
+            latents = self.model.noise_scheduler.add_noise(latents, noise, t_start)
+
+            # 4) Conditioning
+            text_embeds = self.prompt_embeds.repeat(bsz, 1, 1).to(latents.device, dtype=self._amp_dtype())
+            partial_image_embeds = self.model.encode_partial(partial_diffuse_imgs).to(latents.device, dtype=self._amp_dtype())
+
+
+            # 5) Perform the denoising process
+            for t in tqdm(timesteps[t_start:]):
+                t_tensor = torch.tensor([t] * bsz, device=self.device, dtype=self._amp_dtype())
+
+                # Get the model prediction
+                model_pred = self.forward(latents, t_tensor, text_embeds, partial_image_embeds)
+                
+                # Update latents based on the model prediction
+                output = self.model.noise_scheduler.step(model_pred, t, latents)
+                latents = output.prev_sample
+
+            # Decode the latents to get the reconstructed images
+            reconstructed_imgs = self.model.decode_latents(latents)
+
+        return reconstructed_imgs

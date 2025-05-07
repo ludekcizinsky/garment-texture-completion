@@ -27,8 +27,7 @@ class GarmentDenoiser(nn.Module):
             truncation=True,
             return_tensors="pt", 
         )
-        text_inputs = {k: v for k,v in text_inputs.items()}
-
+        text_inputs = {k: v.to(self.text_encoder.device) for k,v in text_inputs.items()}
 
         # Encode with text encoder
         with torch.no_grad():  # Optional, since you're not training the encoder
@@ -134,6 +133,9 @@ class GarmentDenoiser(nn.Module):
         # returns z ∼ q(z|x) × scaling_factor
         latents = self.vae_diffuse.encode(full_diffuse_img.to(self.weight_dtype)).latent_dist.sample()
         return latents * self.vae_diffuse.config.scaling_factor
+    
+    def decode_latents(self, latents):
+        return self.vae_diffuse.decode(latents / self.vae_diffuse.config.scaling_factor).sample
 
     def encode_partial(self, partial_img):
         # returns the deterministic encoding of the partial image
