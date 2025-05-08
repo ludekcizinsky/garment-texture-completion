@@ -117,33 +117,34 @@ class GarmentInpainterModule(pl.LightningModule):
         self.val_results.append(image_metrics)
 
         # find index of the easiest and hardest sample based on ssim
-        ssim_scores = image_metrics["ssim"]
-        easiest_sample_idx = ssim_scores.argmax()
-        hardest_sample_idx = ssim_scores.argmin()
+        if batch_idx % 3 == 0:
+            ssim_scores = image_metrics["ssim"]
+            easiest_sample_idx = ssim_scores.argmax()
+            hardest_sample_idx = ssim_scores.argmin()
 
-        easiest_pred = reconstructed_imgs[easiest_sample_idx]
-        hardest_pred = reconstructed_imgs[hardest_sample_idx]
+            easiest_pred = reconstructed_imgs[easiest_sample_idx]
+            hardest_pred = reconstructed_imgs[hardest_sample_idx]
 
-        easiest_pred_plot = get_input_output_plot(
-            batch["partial_diffuse_img"][easiest_sample_idx],
-            batch["full_diffuse_img"][easiest_sample_idx],
-            easiest_pred
-        )
+            easiest_pred_plot = get_input_output_plot(
+                batch["partial_diffuse_img"][easiest_sample_idx],
+                batch["full_diffuse_img"][easiest_sample_idx],
+                easiest_pred
+            )
 
-        hardest_pred_plot = get_input_output_plot(
-            batch["partial_diffuse_img"][hardest_sample_idx],
-            batch["full_diffuse_img"][hardest_sample_idx],
-            hardest_pred
-        )
-        
-        
-        wandb.log(
-            {
-                f"val-images/easiest_pred_batch_{batch_idx}": wandb.Image(easiest_pred_plot, caption=batch["name"][easiest_sample_idx]),
-                f"val-images/hardest_pred_batch_{batch_idx}": wandb.Image(hardest_pred_plot, caption=batch["name"][hardest_sample_idx]),
-            },
-            step=self.global_step
-        )
+            hardest_pred_plot = get_input_output_plot(
+                batch["partial_diffuse_img"][hardest_sample_idx],
+                batch["full_diffuse_img"][hardest_sample_idx],
+                hardest_pred
+            )
+            
+            
+            wandb.log(
+                {
+                    f"val-images/easiest_pred_batch_{batch_idx}": wandb.Image(easiest_pred_plot, caption=batch["name"][easiest_sample_idx]),
+                    f"val-images/hardest_pred_batch_{batch_idx}": wandb.Image(hardest_pred_plot, caption=batch["name"][hardest_sample_idx]),
+                },
+                step=self.global_step
+            )
 
         # log also selected texture names
         selected_texture_names = self.cfg.data.val_sel_texture_names
@@ -158,16 +159,6 @@ class GarmentInpainterModule(pl.LightningModule):
                     reconstructed_imgs[idx]
                 )
                 sel_figures[f"val-images/sel_figure_{i}"] = wandb.Image(figure, caption=name)
-
-        if len(sel_figures) == 0:
-            idx = 0
-            name = batch_names[idx]
-            figure = get_input_output_plot(
-                batch["partial_diffuse_img"][idx],
-                batch["full_diffuse_img"][idx],
-                reconstructed_imgs[idx]
-            )
-            sel_figures[f"val-images/sel_figure_{idx}"] = wandb.Image(figure, caption=name)
 
         wandb.log(
             sel_figures,
