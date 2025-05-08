@@ -309,3 +309,25 @@ def post_process_image(image):
         image = image.cpu().numpy()
     decoded_image = channels_last(denormalise_image(image))
     return decoded_image
+
+
+def torch_image_to_pil(img_tensor: torch.Tensor) -> Image.Image:
+    """
+    Converts a torch image tensor (3 x H x W, range [0, 1], on CUDA) to a PIL image.
+
+    Args:
+        img_tensor (torch.Tensor): A 3 x H x W tensor on CUDA in range [0, 1].
+
+    Returns:
+        PIL.Image.Image: The corresponding PIL image.
+    """
+    # Move to CPU and clamp to [0, 1]
+    img_tensor = img_tensor.detach().cpu().clamp(0, 1)
+    
+    # Convert to [0, 255] and uint8
+    img_tensor = (img_tensor * 255).to(torch.uint8)
+    
+    # Convert to H x W x C format for PIL
+    img_numpy = img_tensor.permute(1, 2, 0).numpy()
+    
+    return Image.fromarray(img_numpy)

@@ -6,8 +6,10 @@ from helpers.model import GarmentDenoiser
 from helpers.losses import ddim_loss as ddim_loss_f
 from helpers.metrics import compute_all_metrics
 from helpers.data_utils import denormalise_image_torch
+from helpers.plots import get_input_output_plot
 
 from tqdm import tqdm
+import wandb
 
 class GarmentInpainterModule(pl.LightningModule):
     def __init__(self, cfg, trn_dataloader):
@@ -91,7 +93,6 @@ class GarmentInpainterModule(pl.LightningModule):
         }
 
     def training_step(self, batch, batch_idx):
-        print("Training step")
 
         latents, noisy_latents, timesteps, model_pred, target = self._shared_step(batch)
         losses = self.compute_losses(latents, noisy_latents, timesteps, model_pred, target)
@@ -115,6 +116,66 @@ class GarmentInpainterModule(pl.LightningModule):
         image_metrics = compute_all_metrics(reconstructed_imgs, target_imgs)
         self.val_results.append(image_metrics)
 
+        # find index of the easiest and hardest sample based on ssim
+        ssim_scores = image_metrics["ssim"]
+        easiest_sample_idx = ssim_scores.argmax()
+        hardest_sample_idx = ssim_scores.argmin()
+
+        easiest_pred = reconstructed_imgs[easiest_sample_idx]
+        hardest_pred = reconstructed_imgs[hardest_sample_idx]
+
+        easiest_pred_plot = get_input_output_plot(
+            batch["partial_diffuse_img"][easiest_sample_idx],
+            batch["full_diffuse_img"][easiest_sample_idx],
+            easiest_pred
+        )
+
+        hardest_pred_plot = get_input_output_plot(
+            batch["partial_diffuse_img"][hardest_sample_idx],
+            batch["full_diffuse_img"][hardest_sample_idx],
+            hardest_pred
+        )
+        
+        
+        wandb.log(
+            {
+                f"val-images/easiest_pred_batch_{batch_idx}": wandb.Image(easiest_pred_plot, caption=batch["name"][easiest_sample_idx]),
+                f"val-images/hardest_pred_batch_{batch_idx}": wandb.Image(hardest_pred_plot, caption=batch["name"][hardest_sample_idx]),
+            },
+            step=self.global_step
+        )
+
+        # log also selected texture names
+        selected_texture_names = self.cfg.data.val_sel_texture_names
+        batch_names = batch["name"]
+        sel_figures = dict()
+        for i, name in enumerate(selected_texture_names):
+            if name in batch_names:
+                idx = batch_names.index(name)
+                figure = get_input_output_plot(
+                    batch["partial_diffuse_img"][idx],
+                    batch["full_diffuse_img"][idx],
+                    reconstructed_imgs[idx]
+                )
+                sel_figures[f"val-images/sel_figure_{i}"] = wandb.Image(figure, caption=name)
+
+        if len(sel_figures) == 0:
+            idx = 0
+            name = batch_names[idx]
+            figure = get_input_output_plot(
+                batch["partial_diffuse_img"][idx],
+                batch["full_diffuse_img"][idx],
+                reconstructed_imgs[idx]
+            )
+            sel_figures[f"val-images/sel_figure_{idx}"] = wandb.Image(figure, caption=name)
+
+        wandb.log(
+            sel_figures,
+            step=self.global_step
+        )
+
+
+
     def on_validation_epoch_end(self):
         metrics = {}
         for output in self.val_results:
@@ -133,7 +194,11 @@ class GarmentInpainterModule(pl.LightningModule):
 
         agg_metrics["lpips"] = sum(metrics["lpips"]).item() / total
 
-        self.log_dict(agg_metrics)
+        self.log_dict(
+            {
+                f"val/{k}": v for k, v in agg_metrics.items()
+            }
+        )
         self.val_results = []    
 
     def configure_optimizers(self):
@@ -157,7 +222,7 @@ class GarmentInpainterModule(pl.LightningModule):
     def inference(self,
                 partial_diffuse_imgs,
                 num_inference_steps=50,
-                strength=1.0,
+                strength=0.8,
                 guidance_scale=7.5,
                 return_intermediate_images=False):
 
