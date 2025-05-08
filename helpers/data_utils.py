@@ -278,6 +278,11 @@ def denormalise_image(image):
     image = np.clip(image, 0, 1)
     return image
 
+def denormalise_image_torch(image):
+    image = (image + 1) / 2
+    image = torch.clamp(image, 0, 1)
+    return image
+
 def channels_first(image):
     if len(image.shape) == 3:
         return np.transpose(image, (2, 0, 1))

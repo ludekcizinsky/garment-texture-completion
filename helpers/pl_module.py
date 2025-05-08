@@ -4,6 +4,8 @@ import pytorch_lightning as pl
 
 from helpers.model import GarmentDenoiser
 from helpers.losses import ddim_loss as ddim_loss_f
+from helpers.metrics import compute_all_metrics
+from helpers.data_utils import denormalise_image_torch
 
 from tqdm import tqdm
 
@@ -91,19 +93,24 @@ class GarmentInpainterModule(pl.LightningModule):
 
         latents, noisy_latents, timesteps, model_pred, target = self._shared_step(batch)
         losses = self.compute_losses(latents, noisy_latents, timesteps, model_pred, target)
-        self.log_dict({f"train/{k}": v for k,v in losses.items() if v is not None},
-                    on_step=True, on_epoch=False, prog_bar=True)
-        self.log("step", self.global_step, prog_bar=False)
-
-        
+        self.log_dict({f"train/{k}": v for k,v in losses.items() if v is not None}, on_step=True)
+        self.log("step", self.global_step)
+ 
         return losses["loss"]
 
     def validation_step(self, batch, batch_idx):
-        
+
+        # Latent space metrics        
         latents, noisy_latents, timesteps, model_pred, target = self._shared_step(batch)
         losses = self.compute_losses(latents, noisy_latents, timesteps, model_pred, target)
-        self.log_dict({f"val/{k}": v for k,v in losses.items() if v is not None},
-                    on_step=False, on_epoch=True, prog_bar=True)
+        self.log_dict({f"val/{k}": v for k,v in losses.items() if v is not None}, on_step=False, on_epoch=True)
+
+        # Image space metrics
+        reconstructed_imgs = self.inference(batch["partial_diffuse_img"])
+        reconstructed_imgs = denormalise_image_torch(reconstructed_imgs)
+        target_imgs = denormalise_image_torch(batch["full_diffuse_img"])
+        metrics = compute_all_metrics(reconstructed_imgs, target_imgs)
+        self.log_dict({f"val/{k}": v for k,v in metrics.items()}, on_step=False, on_epoch=True)
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(

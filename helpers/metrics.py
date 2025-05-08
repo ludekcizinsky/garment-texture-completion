@@ -7,9 +7,9 @@ import lpips
 _LPIPS_MODEL = lpips.LPIPS(net='alex').eval()
 
 
-def compute_ssim(preds: torch.Tensor, targets: torch.Tensor, data_range: float = 1.0) -> float:
+def compute_ssim(preds: torch.Tensor, targets: torch.Tensor, data_range: float = 1.0) -> torch.Tensor:
     """
-    Compute mean Structural Similarity Index Measure (SSIM) between preds and targets.
+    Compute Structural Similarity Index Measure (SSIM) between preds and targets for each sample.
     
     Args:
         preds (torch.Tensor): Predicted images, shape [B, C, H, W], values in [0, data_range].
@@ -17,16 +17,20 @@ def compute_ssim(preds: torch.Tensor, targets: torch.Tensor, data_range: float =
         data_range (float): The data range of the inputs (max - min). Default is 1.0.
     
     Returns:
-        float: SSIM score (averaged over the batch).
+        torch.Tensor: SSIM scores for each sample in the batch, shape [B].
     """
     preds = preds.float()
     targets = targets.float()
-    return ssim(preds, targets, data_range=data_range).item()
+    result = ssim(preds, targets, data_range=data_range, reduction=None)
+    if len(result.shape) == 0:
+        return torch.tensor([result.item()])
+    else:
+        return result.squeeze()
 
 
-def compute_psnr(preds: torch.Tensor, targets: torch.Tensor, data_range: float = 1.0) -> float:
+def compute_psnr(preds: torch.Tensor, targets: torch.Tensor, data_range: float = 1.0) -> torch.Tensor:
     """
-    Compute mean Peak Signal-to-Noise Ratio (PSNR) between preds and targets.
+    Compute Peak Signal-to-Noise Ratio (PSNR) between preds and targets for each sample.
     
     Args:
         preds (torch.Tensor): Predicted images, shape [B, C, H, W], values in [0, data_range].
@@ -34,23 +38,27 @@ def compute_psnr(preds: torch.Tensor, targets: torch.Tensor, data_range: float =
         data_range (float): The data range of the inputs (max - min). Default is 1.0.
     
     Returns:
-        float: PSNR score in dB (averaged over the batch).
+        torch.Tensor: PSNR scores in dB for each sample in the batch, shape [B].
     """
     preds = preds.float()
     targets = targets.float()
-    return psnr(preds, targets, data_range=data_range).item()
+    result = psnr(preds, targets, data_range=data_range, reduction=None)
+    if len(result.shape) == 0:
+        return torch.tensor([result.item()])
+    else:
+        return result.squeeze()
 
 
-def compute_lpips(preds: torch.Tensor, targets: torch.Tensor) -> float:
+def compute_lpips(preds: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
     """
-    Compute mean Learned Perceptual Image Patch Similarity (LPIPS) between preds and targets.
+    Compute Learned Perceptual Image Patch Similarity (LPIPS) between preds and targets for each sample.
     
     Args:
         preds (torch.Tensor): Predicted images, shape [B, C, H, W], values in [0, 1].
         targets (torch.Tensor): Ground truth images, same shape and range as preds.
     
     Returns:
-        float: LPIPS score (averaged over the batch).
+        torch.Tensor: LPIPS scores for each sample in the batch, shape [B].
     """
     # Convert from [0, 1] to [-1, 1] as expected by LPIPS
     preds_norm = preds.float() * 2 - 1
@@ -58,7 +66,11 @@ def compute_lpips(preds: torch.Tensor, targets: torch.Tensor) -> float:
     with torch.no_grad():
         # LPIPS returns a [B, 1, 1, 1] tensor
         dist = _LPIPS_MODEL(preds_norm, targets_norm)
-        return dist.mean().item()
+        # return tensor of shape [B,]
+        if dist.shape[0] == 1:
+            return torch.tensor([dist.item()])
+        else:
+            return dist.squeeze()
 
 
 def compute_all_metrics(preds: torch.Tensor, targets: torch.Tensor, data_range: float = 1.0) -> dict:
@@ -78,12 +90,3 @@ def compute_all_metrics(preds: torch.Tensor, targets: torch.Tensor, data_range: 
         'psnr': compute_psnr(preds, targets, data_range),
         'lpips': compute_lpips(preds, targets),
     }
-
-
-# Example usage (for testing)
-if __name__ == "__main__":
-    B, C, H, W = 4, 3, 256, 256
-    preds = torch.rand(B, C, H, W)
-    targets = torch.rand(B, C, H, W)
-    metrics = compute_all_metrics(preds, targets)
-    print(metrics)
