@@ -3,7 +3,7 @@ import cv2
 import random
 import numpy as np
 from PIL import Image
-
+import torch
 def generate_random_polygon(image_shape, num_vertices=6):
     """
     Generate a random polygon.
@@ -298,3 +298,9 @@ def load_image_as_array(path):
     image = Image.open(path).convert("RGB")
     image = np.array(image).astype(np.float32)
     return image
+
+def post_process_image(image):
+    if type(image) == torch.Tensor:
+        image = image.cpu().numpy()
+    decoded_image = channels_last(denormalise_image(image))
+    return decoded_image
