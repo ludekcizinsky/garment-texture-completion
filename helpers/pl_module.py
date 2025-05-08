@@ -20,6 +20,7 @@ class GarmentInpainterModule(pl.LightningModule):
         self.model = GarmentDenoiser(cfg)
 
         self.trn_dataloader = trn_dataloader
+        self.val_results = []
 
         self.prompt = "fill the missing parts of a fabric texture matching the existing colors and style"
         self.null_prompt = ""
@@ -90,6 +91,7 @@ class GarmentInpainterModule(pl.LightningModule):
         }
 
     def training_step(self, batch, batch_idx):
+        print("Training step")
 
         latents, noisy_latents, timesteps, model_pred, target = self._shared_step(batch)
         losses = self.compute_losses(latents, noisy_latents, timesteps, model_pred, target)
@@ -103,14 +105,36 @@ class GarmentInpainterModule(pl.LightningModule):
         # Latent space metrics        
         latents, noisy_latents, timesteps, model_pred, target = self._shared_step(batch)
         losses = self.compute_losses(latents, noisy_latents, timesteps, model_pred, target)
-        self.log_dict({f"val/{k}": v for k,v in losses.items() if v is not None}, on_step=False, on_epoch=True)
+        bsz = latents.shape[0]
+        self.log_dict({f"val/{k}": v for k,v in losses.items() if v is not None}, on_step=False, on_epoch=True, batch_size=bsz)
 
         # Image space metrics
         reconstructed_imgs = self.inference(batch["partial_diffuse_img"])
         reconstructed_imgs = denormalise_image_torch(reconstructed_imgs)
         target_imgs = denormalise_image_torch(batch["full_diffuse_img"])
-        metrics = compute_all_metrics(reconstructed_imgs, target_imgs)
-        self.log_dict({f"val/{k}": v for k,v in metrics.items()}, on_step=False, on_epoch=True)
+        image_metrics = compute_all_metrics(reconstructed_imgs, target_imgs)
+        self.val_results.append(image_metrics)
+
+    def on_validation_epoch_end(self):
+        metrics = {}
+        for output in self.val_results:
+            for k, v in output.items():
+                if k not in metrics:
+                    metrics[k] = []
+                metrics[k].append(v)
+
+        total = None
+        agg_metrics = {}
+        for k, v in metrics.items():
+            if k != "lpips":
+                all_results = torch.cat(v)
+                total = len(all_results)
+                agg_metrics[k] = all_results.mean()
+
+        agg_metrics["lpips"] = sum(metrics["lpips"]).item() / total
+
+        self.log_dict(agg_metrics)
+        self.val_results = []    
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
@@ -168,7 +192,7 @@ class GarmentInpainterModule(pl.LightningModule):
             img_embeds  = torch.cat([uncond_img_embeds,  cond_img_embeds],   dim=0)
 
             # 5) Denoising loop with CFG
-            for t in tqdm(timesteps):
+            for t in tqdm(timesteps, desc="Denoising loop during inference"):
                 t_tensor = torch.full((2*bsz,), t, device=self.device, dtype=self._amp_dtype())
 
                 # duplicate latents to match doubled batch

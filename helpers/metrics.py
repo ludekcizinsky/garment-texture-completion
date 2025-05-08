@@ -1,11 +1,6 @@
 import torch
 import torch.nn.functional as F
-from torchmetrics.functional.image import structural_similarity_index_measure as ssim, peak_signal_noise_ratio as psnr
-import lpips
-
-# Initialize LPIPS model once
-_LPIPS_MODEL = lpips.LPIPS(net='alex').eval()
-
+from torchmetrics.functional.image import structural_similarity_index_measure as ssim, peak_signal_noise_ratio as psnr, learned_perceptual_image_patch_similarity as lpips
 
 def compute_ssim(preds: torch.Tensor, targets: torch.Tensor, data_range: float = 1.0) -> torch.Tensor:
     """
@@ -22,10 +17,7 @@ def compute_ssim(preds: torch.Tensor, targets: torch.Tensor, data_range: float =
     preds = preds.float()
     targets = targets.float()
     result = ssim(preds, targets, data_range=data_range, reduction=None)
-    if len(result.shape) == 0:
-        return torch.tensor([result.item()])
-    else:
-        return result.squeeze()
+    return result
 
 
 def compute_psnr(preds: torch.Tensor, targets: torch.Tensor, data_range: float = 1.0) -> torch.Tensor:
@@ -42,11 +34,8 @@ def compute_psnr(preds: torch.Tensor, targets: torch.Tensor, data_range: float =
     """
     preds = preds.float()
     targets = targets.float()
-    result = psnr(preds, targets, data_range=data_range, reduction=None)
-    if len(result.shape) == 0:
-        return torch.tensor([result.item()])
-    else:
-        return result.squeeze()
+    result = psnr(preds, targets, data_range=data_range, reduction=None, dim=[1, 2, 3])
+    return result
 
 
 def compute_lpips(preds: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
@@ -60,17 +49,10 @@ def compute_lpips(preds: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
     Returns:
         torch.Tensor: LPIPS scores for each sample in the batch, shape [B].
     """
-    # Convert from [0, 1] to [-1, 1] as expected by LPIPS
-    preds_norm = preds.float() * 2 - 1
-    targets_norm = targets.float() * 2 - 1
-    with torch.no_grad():
-        # LPIPS returns a [B, 1, 1, 1] tensor
-        dist = _LPIPS_MODEL(preds_norm, targets_norm)
-        # return tensor of shape [B,]
-        if dist.shape[0] == 1:
-            return torch.tensor([dist.item()])
-        else:
-            return dist.squeeze()
+    preds = preds.float()
+    targets = targets.float()
+    result = lpips(preds, targets, reduction="sum", normalize=True, net_type='alex')
+    return result
 
 
 def compute_all_metrics(preds: torch.Tensor, targets: torch.Tensor, data_range: float = 1.0) -> dict:
