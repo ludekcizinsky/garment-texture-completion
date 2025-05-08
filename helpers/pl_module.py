@@ -127,46 +127,73 @@ class GarmentInpainterModule(pl.LightningModule):
         val_dataset = self.val_dataloader.dataset
         val_dataset.load_state_dict(checkpoint['val_dataset_state'])
 
-    def inference(self, partial_diffuse_imgs, num_inference_steps=50, strength=1.0, return_intermediate_images=False):
+    def inference(self,
+                partial_diffuse_imgs,
+                num_inference_steps=50,
+                strength=1.0,
+                guidance_scale=7.5,
+                return_intermediate_images=False):
+
         intermediate_images = []
-        self.eval()  # Set the model to evaluation mode
-        with torch.no_grad():  # Disable gradient computation
+        self.eval()
+        with torch.no_grad():
             bsz = partial_diffuse_imgs.shape[0]
+
             # 1) Encode the partial images
             latents = self.model.encode_latents(partial_diffuse_imgs)
 
-            # 2) Prepare scheduler & timesteps
+            # 2) Scheduler & timesteps
             self.model.noise_scheduler.set_timesteps(num_inference_steps)
             timesteps = self.model.noise_scheduler.timesteps[-int(num_inference_steps * strength):]
 
-            # 3) Add noise at the chosen timestep
-            t_start = torch.tensor([timesteps[0]], device=latents.device)
-            noise   = torch.randn_like(latents)
+            # 3) Add noise
+            t_start = timesteps[0]
+            noise = torch.randn_like(latents)
             noisy_latents = self.model.noise_scheduler.add_noise(latents, noise, t_start)
 
-            # 4) Conditioning
-            text_embeds = self.prompt_embeds.repeat(bsz, 1, 1).to(latents.device, dtype=self._amp_dtype())
-            partial_image_embeds = self.model.encode_partial(partial_diffuse_imgs).to(latents.device, dtype=self._amp_dtype())
+            # 4) Prepare embeddings for CFG
+            # conditional text + image
+            cond_text_embeds = self.prompt_embeds.repeat(bsz, 1, 1).to(latents.device, dtype=self._amp_dtype())
+            cond_img_embeds  = self.model.encode_partial(partial_diffuse_imgs).to(latents.device, dtype=self._amp_dtype())
 
+            # unconditional (empty prompt) — same shape
+            uncond_text_embeds = self.null_prompt_embeds.repeat(bsz, 1, 1).to(latents.device, dtype=self._amp_dtype())
+            uncond_img_embeds  = torch.zeros_like(cond_img_embeds).to(latents.device, dtype=self._amp_dtype())
 
-            # 5) Perform the denoising process
+            # stack them so that batch size doubles
+            text_embeds = torch.cat([uncond_text_embeds, cond_text_embeds], dim=0)
+            img_embeds  = torch.cat([uncond_img_embeds,  cond_img_embeds],   dim=0)
+
+            # 5) Denoising loop with CFG
             for t in tqdm(timesteps):
-                t_tensor = torch.tensor([t] * bsz, device=self.device, dtype=self._amp_dtype())
+                t_tensor = torch.full((2*bsz,), t, device=self.device, dtype=self._amp_dtype())
 
-                # Get the model prediction
-                model_pred = self.forward(noisy_latents, t_tensor, text_embeds, partial_image_embeds)
+                # duplicate latents to match doubled batch
+                latent_model_input = torch.cat([noisy_latents, noisy_latents], dim=0)
+
+                # model forward once for uncond+cond in one batch
+                eps_pair = self.forward(
+                    latent_model_input,
+                    t_tensor,
+                    text_embeds,
+                    img_embeds
+                )  # should return a tensor of shape [2*bsz, ...]
                 
-                # Update latents based on the model prediction
-                output = self.model.noise_scheduler.step(model_pred, t, noisy_latents)
+                # split into uncond / cond
+                eps_uncond, eps_cond = eps_pair.chunk(2, dim=0)
+
+                # classifier-free guidance
+                eps = eps_uncond + guidance_scale * (eps_cond - eps_uncond)
+
+                # scheduler step on the guided eps
+                output = self.model.noise_scheduler.step(eps, t, noisy_latents)
                 noisy_latents = output.prev_sample
 
                 if return_intermediate_images:
                     intermediate_images.append(self.model.decode_latents(noisy_latents))
 
-            # Decode the latents to get the reconstructed images
+            # final decode
             reconstructed_imgs = self.model.decode_latents(noisy_latents)
 
-        if return_intermediate_images:
-            return reconstructed_imgs, intermediate_images
-        else:
-            return reconstructed_imgs
+        return (reconstructed_imgs, intermediate_images) if return_intermediate_images else reconstructed_imgs
+
