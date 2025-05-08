@@ -15,7 +15,7 @@ def get_dataloaders(cfg):
     N = len(full_ds)
 
     all_idx = np.random.permutation(N)
-    split   = int(cfg.data.trn_frac * N)
+    split   = N - cfg.data.val_size
     train_idx, val_idx = all_idx[:split].tolist(), all_idx[split:].tolist()
 
     # Create a Manager + shared dict for worker positions
@@ -34,12 +34,7 @@ def get_dataloaders(cfg):
         shuffle=False,     # must be False for IterableDataset
     )
 
-    val_shared_worker_positions = manager.dict()
-    val_ds = ResumableInpaintingIterableDataset(
-        cfg,
-        indices=val_idx,
-        shared_worker_positions=val_shared_worker_positions
-    )
+    val_ds = InpaintingDataset(cfg, selected_indices=val_idx)
     val_loader = torch.utils.data.DataLoader(
         val_ds,
         batch_size=cfg.data.batch_size,
@@ -51,17 +46,20 @@ def get_dataloaders(cfg):
 
 
 class InpaintingDataset(utils.data.Dataset):
-    def __init__(self, cfg):
+    def __init__(self, cfg, selected_indices=None):
         super().__init__()
 
         self.cfg = cfg
         self.res = self.cfg.data.res
 
-        self.texture_paths = [
+        self.texture_paths = sorted([
             os.path.join(cfg.data.pbr_maps_path, folder)
             for folder in os.listdir(cfg.data.pbr_maps_path)
-        ]
+        ])
         self.texture_paths = [path for path in self.texture_paths if os.path.exists(os.path.join(path, "texture_diffuse.png"))]
+
+        if selected_indices is not None:
+            self.texture_paths = [self.texture_paths[i] for i in selected_indices]
 
 
         mask = np.array(Image.open(cfg.data.mask_path).convert("L")) # Load mask as grayscale
@@ -87,6 +85,8 @@ class InpaintingDataset(utils.data.Dataset):
         grid_data = {
             "partial_diffuse_img": partial_img,
             "full_diffuse_img": diffuse_img,
+            "index": index,
+            "path": self.texture_paths[index]
         }
 
         return grid_data

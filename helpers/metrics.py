@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-from torchmetrics.image import peak_signal_noise_ratio as psnr, structural_ssim as ssim
+from torchmetrics.functional.image import structural_similarity_index_measure as ssim, peak_signal_noise_ratio as psnr
 import lpips
 
 # Initialize LPIPS model once

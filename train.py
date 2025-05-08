@@ -20,7 +20,7 @@ def train(cfg: DictConfig):
 
     logger, run_name = get_logger(cfg)
     trn_dataloader, val_dataloader = get_dataloaders(cfg)
-    pl_module = GarmentInpainterModule(cfg, trn_dataloader, val_dataloader)
+    pl_module = GarmentInpainterModule(cfg, trn_dataloader)
     callbacks, ckpt_path = get_callbacks(cfg, run_name)
 
     trainer = pl.Trainer(

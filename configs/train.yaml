@@ -10,7 +10,7 @@ logger:
   run_id: null # tqtzd06l
 
 data:
-  trn_frac: 0.95
+  val_size: 300
   pbr_maps_path: "/scratch/izar/cizinsky/garment-completion/pbr_maps/dresscode"
   mask_path: "/scratch/izar/cizinsky/garment-completion/masks/shirt.png"
   num_workers: 10
