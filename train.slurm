@@ -12,4 +12,4 @@ source /home/cizinsky/venvs/garment/bin/activate
 
 cd /home/cizinsky/garment-texture-completion
 
-python train.py
+python train.py logger.run_id=m688mv2k
