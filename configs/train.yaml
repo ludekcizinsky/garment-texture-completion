@@ -31,21 +31,24 @@ optim:
   warmup_steps: 1000
 
   # Scheduler - reduce on plateau
-  plateau_patience: 10 # how many val/f1 to wait before reducing
+  plateau_patience: 7 # how many val/f1 to wait before reducing
   plateau_factor: 0.5 # reduce by this factor
   min_lr: 1e-6  # minimum learning rate
   plateau_mode: "min" # mode for plateau scheduler
-  plateau_metric: "val/loss" # metric to monitor for plateau scheduler
+  plateau_metric: "val/lpips" # metric to monitor for plateau scheduler
 
   # Gradient clipping
   max_grad_norm: 1.0 # gradient clipping
   grad_norm_type: 2.0 # norm type for gradient clipping
 
+  # Loss
+  ddim_loss: true # baseline: true
+  ddim_loss_weight: 0.5
+
 model:
   vae_path: "/home/cizinsky/garment-texture-completion/data_generation/dresscode/material_gen"
   diffusion_path: "stable-diffusion-v1-5/stable-diffusion-v1-5"
   conditioning_dropout_prob: 0.05 # classifier-free guidance / baseline: 0.05
-  ddim_loss: true # baseline: true
 
 trainer:
   max_steps: -1 #  will be computed during runtime as max_train_samples // batch_size / baseline: 28000 (with batch size 8)

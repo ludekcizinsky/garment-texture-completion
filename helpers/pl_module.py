@@ -91,17 +91,17 @@ class GarmentInpainterModule(pl.LightningModule):
 
         mse_loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
 
-        if self.hparams.model.ddim_loss:
+        if self.hparams.optim.ddim_loss:
             alpha_t = self.model.alphas_cumprod[timesteps]
             ddim_loss = ddim_loss_f(alpha_t, latents, noisy_latents, model_pred)
-            loss = mse_loss + 0.5 * ddim_loss
+            loss = mse_loss + self.hparams.optim.ddim_loss_weight * ddim_loss
         else:
             loss = mse_loss
 
         return {
             "loss": loss,
             "mse_loss": mse_loss,
-            "ddim_loss": ddim_loss if self.hparams.model.ddim_loss else None,
+            "ddim_loss": ddim_loss if self.hparams.optim.ddim_loss else None,
         }
 
     def training_step(self, batch, batch_idx):

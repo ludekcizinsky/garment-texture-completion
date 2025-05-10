@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --job-name=pbr_train
-#SBATCH --output=/home/cizinsky/garment-texture-completion/outputs/slurm/pbr_train_baseline_output.log
-#SBATCH --error=/home/cizinsky/garment-texture-completion/outputs/slurm/pbr_train_baseline_error.log
-#SBATCH --time=40:00:00            
+#SBATCH --job-name=ddim_075
+#SBATCH --output=/home/cizinsky/garment-texture-completion/outputs/slurm/pbr_train_baseline_075_ddim_output.log
+#SBATCH --error=/home/cizinsky/garment-texture-completion/outputs/slurm/pbr_train_baseline_075_ddim_error.log
+#SBATCH --time=30:00:00            
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=20           
 #SBATCH --mem=32G                   
