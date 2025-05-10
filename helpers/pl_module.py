@@ -5,8 +5,10 @@ import pytorch_lightning as pl
 from helpers.model import GarmentDenoiser
 from helpers.losses import ddim_loss as ddim_loss_f
 from helpers.metrics import compute_all_metrics
-from helpers.data_utils import denormalise_image_torch
+from helpers.data_utils import denormalise_image_torch, pil_to_tensor
 from helpers.plots import get_input_output_plot
+
+from diffusers import StableDiffusionInstructPix2PixPipeline, AutoencoderKL
 
 from tqdm import tqdm
 import wandb
@@ -26,6 +28,16 @@ class GarmentInpainterModule(pl.LightningModule):
 
         self.prompt = "fill the missing parts of a fabric texture matching the existing colors and style"
         self.null_prompt = ""
+
+        self.inference_pipe = StableDiffusionInstructPix2PixPipeline.from_pretrained(
+            self.cfg.model.diffusion_path,
+            unet=self.model.unet,
+            vae=self.model.vae_diffuse,
+            revision=None,
+            safety_checker=None,
+            torch_dtype=torch.float32,
+        ).to("cuda")
+
 
     def setup(self, stage=None):
         # Called once per device
@@ -111,9 +123,9 @@ class GarmentInpainterModule(pl.LightningModule):
 
         # Image space metrics
         reconstructed_imgs = self.inference(batch["partial_diffuse_img"])
-        reconstructed_imgs = denormalise_image_torch(reconstructed_imgs)
+        reconstructed_imgs_tensors = torch.stack([pil_to_tensor(img) for img in reconstructed_imgs]).to(self.device)
         target_imgs = denormalise_image_torch(batch["full_diffuse_img"])
-        image_metrics = compute_all_metrics(reconstructed_imgs, target_imgs)
+        image_metrics = compute_all_metrics(reconstructed_imgs_tensors, target_imgs)
         self.val_results.append(image_metrics)
 
         # find index of the easiest and hardest sample based on ssim
@@ -213,70 +225,18 @@ class GarmentInpainterModule(pl.LightningModule):
     def inference(self,
                 partial_diffuse_imgs,
                 num_inference_steps=50,
-                strength=0.8,
-                guidance_scale=7.5,
-                return_intermediate_images=False):
+                guidance_scale=7.0,
+                image_guidance_scale=1.5):
 
-        intermediate_images = []
-        self.eval()
-        with torch.no_grad():
-            bsz = partial_diffuse_imgs.shape[0]
+        prompts = [self.prompt]*len(partial_diffuse_imgs)
+        zero_one_img_tensors = denormalise_image_torch(partial_diffuse_imgs)
+        self.inference_pipe.unet = self.model.unet
+        preds = self.inference_pipe(
+            prompts,
+            image=zero_one_img_tensors,
+            num_inference_steps=num_inference_steps,
+            image_guidance_scale=image_guidance_scale,
+            guidance_scale=guidance_scale,
+        ).images
 
-            # 1) Encode the partial images
-            latents = self.model.encode_latents(partial_diffuse_imgs)
-
-            # 2) Scheduler & timesteps
-            self.model.noise_scheduler.set_timesteps(num_inference_steps)
-            timesteps = self.model.noise_scheduler.timesteps[-int(num_inference_steps * strength):]
-
-            # 3) Add noise
-            t_start = timesteps[0]
-            noise = torch.randn_like(latents)
-            noisy_latents = self.model.noise_scheduler.add_noise(latents, noise, t_start)
-
-            # 4) Prepare embeddings for CFG
-            # conditional text + image
-            cond_text_embeds = self.prompt_embeds.repeat(bsz, 1, 1).to(latents.device, dtype=self._amp_dtype())
-            cond_img_embeds  = self.model.encode_partial(partial_diffuse_imgs).to(latents.device, dtype=self._amp_dtype())
-
-            # unconditional (empty prompt) — same shape
-            uncond_text_embeds = self.null_prompt_embeds.repeat(bsz, 1, 1).to(latents.device, dtype=self._amp_dtype())
-            uncond_img_embeds  = torch.zeros_like(cond_img_embeds).to(latents.device, dtype=self._amp_dtype())
-
-            # stack them so that batch size doubles
-            text_embeds = torch.cat([uncond_text_embeds, cond_text_embeds], dim=0)
-            img_embeds  = torch.cat([uncond_img_embeds,  cond_img_embeds],   dim=0)
-
-            # 5) Denoising loop with CFG
-            for t in tqdm(timesteps, desc="Denoising loop during inference"):
-                t_tensor = torch.full((2*bsz,), t, device=self.device, dtype=self._amp_dtype())
-
-                # duplicate latents to match doubled batch
-                latent_model_input = torch.cat([noisy_latents, noisy_latents], dim=0)
-
-                # model forward once for uncond+cond in one batch
-                eps_pair = self.forward(
-                    latent_model_input,
-                    t_tensor,
-                    text_embeds,
-                    img_embeds
-                )  # should return a tensor of shape [2*bsz, ...]
-                
-                # split into uncond / cond
-                eps_uncond, eps_cond = eps_pair.chunk(2, dim=0)
-
-                # classifier-free guidance
-                eps = eps_uncond + guidance_scale * (eps_cond - eps_uncond)
-
-                # scheduler step on the guided eps
-                output = self.model.noise_scheduler.step(eps, t, noisy_latents)
-                noisy_latents = output.prev_sample
-
-                if return_intermediate_images:
-                    intermediate_images.append(self.model.decode_latents(noisy_latents))
-
-            # final decode
-            reconstructed_imgs = self.model.decode_latents(noisy_latents)
-
-        return (reconstructed_imgs, intermediate_images) if return_intermediate_images else reconstructed_imgs
-
+        return preds

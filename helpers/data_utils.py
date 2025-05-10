@@ -4,6 +4,9 @@ import random
 import numpy as np
 from PIL import Image
 import torch
+import torchvision.transforms as T
+
+
 def generate_random_polygon(image_shape, num_vertices=6):
     """
     Generate a random polygon.
@@ -331,3 +334,18 @@ def torch_image_to_pil(img_tensor: torch.Tensor) -> Image.Image:
     img_numpy = img_tensor.permute(1, 2, 0).numpy()
     
     return Image.fromarray(img_numpy)
+
+
+def pil_to_tensor(pil_img: Image.Image) -> torch.Tensor:
+    """
+    Converts a PIL image to a torch tensor in channel-first format (C, H, W)
+    with values normalized to the range [0, 1].
+
+    Args:
+        pil_img (PIL.Image.Image): Input image.
+
+    Returns:
+        torch.Tensor: Tensor of shape (C, H, W) and dtype float32.
+    """
+    transform = T.ToTensor()  # Converts to [0, 1] and (C, H, W)
+    return transform(pil_img)
