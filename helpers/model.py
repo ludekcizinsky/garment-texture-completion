@@ -82,8 +82,6 @@ class GarmentDenoiser(nn.Module):
 
         # Set new number of input channels. For example, extending from 4 to 8.
         in_channels = 8
-        if self.cfg.model.add_mask_conditioning:
-            in_channels += 4
         out_channels = self.unet.conv_in.out_channels
         
         # Update the model configuration (if used later for saving or further adjustments).
