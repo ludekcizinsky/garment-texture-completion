@@ -78,16 +78,19 @@ class InpaintingDataset(utils.data.Dataset):
 
         diffuse_img = data_utils.normalise_image(diffuse_img)
         partial_img = data_utils.normalise_image(partial_img)
+        mask = data_utils.normalise_image(self.mask)
 
         diffuse_img = data_utils.channels_first(diffuse_img)
         partial_img = data_utils.channels_first(partial_img)
+        mask = data_utils.channels_first(mask)
 
         name = self.texture_paths[index].split("/")[-1]
 
         grid_data = {
             "partial_diffuse_img": partial_img,
             "full_diffuse_img": diffuse_img,
-            "name": name
+            "name": name,
+            "mask": mask
         }
 
         return grid_data
