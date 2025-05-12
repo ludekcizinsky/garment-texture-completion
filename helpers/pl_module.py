@@ -36,6 +36,7 @@ class GarmentInpainterModule(pl.LightningModule):
             revision=None,
             safety_checker=None,
             torch_dtype=torch.float32,
+            requires_safety_checker=False,
         ).to("cuda")
 
 
@@ -205,8 +206,9 @@ class GarmentInpainterModule(pl.LightningModule):
         self.val_results = []    
 
     def configure_optimizers(self):
+        lora_params = [p for p in self.model.parameters() if p.requires_grad]
         optimizer = torch.optim.AdamW(
-            self.model.parameters(),
+            lora_params,
             lr=self.lr,
             weight_decay=self.weight_decay,
         )
