@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=ddim_075
-#SBATCH --output=/home/cizinsky/garment-texture-completion/outputs/slurm/pbr_train_baseline_075_ddim_output.log
-#SBATCH --error=/home/cizinsky/garment-texture-completion/outputs/slurm/pbr_train_baseline_075_ddim_error.log
+#SBATCH --job-name=lora
+#SBATCH --output=/home/cizinsky/garment-texture-completion/outputs/slurm/pbr_train_lora_output.log
+#SBATCH --error=/home/cizinsky/garment-texture-completion/outputs/slurm/pbr_train_lora_error.log
 #SBATCH --time=30:00:00            
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=20           
@@ -12,4 +12,4 @@ source /home/cizinsky/venvs/garment/bin/activate
 
 cd /home/cizinsky/garment-texture-completion
 
-python train.py 
+python train.py logger.tags=[lora]
