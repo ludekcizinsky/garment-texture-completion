@@ -78,13 +78,12 @@ class GarmentDenoiser(nn.Module):
 
     def _add_lora_to_unet(self):
         lora_unet_cfg = LoraConfig(
-            r=4,                        # low-rank dimension
-            lora_alpha=16,              # scaling
-            target_modules=["to_q",    # cross-attention query
-                    "to_k",
-                    "to_v",
-                    "to_out.0"],  # cross-attention output
-            init_lora_weights=True
+            r=8,
+            lora_alpha=8,
+            init_lora_weights="gaussian",
+            target_modules=["to_k", "to_q", "to_v", "to_out.0"],
+            lora_dropout=0.05,
+            bias="none",
         )
         self.unet = get_peft_model(self.unet, lora_unet_cfg)
 
