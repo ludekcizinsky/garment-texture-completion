@@ -35,7 +35,7 @@ optim:
   plateau_factor: 0.5 # reduce by this factor
   min_lr: 1e-6  # minimum learning rate
   plateau_mode: "min" # mode for plateau scheduler
-  plateau_metric: "val/lpips" # metric to monitor for plateau scheduler
+  plateau_metric: "val/mse_loss" # metric to monitor for plateau scheduler
 
   # Gradient clipping
   max_grad_norm: 1.0 # gradient clipping
