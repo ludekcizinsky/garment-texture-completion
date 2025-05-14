@@ -47,8 +47,10 @@ optim:
 
 model:
   vae_path: "/home/cizinsky/garment-texture-completion/data_generation/dresscode/material_gen"
-  diffusion_path: "stable-diffusion-v1-5/stable-diffusion-v1-5"
+  diffusion_path: "timbrooks/instruct-pix2pix"
   conditioning_dropout_prob: 0.05 # classifier-free guidance / baseline: 0.05
+  cross_attention_dim: 768
+  block_out_channels: [128, 256, 512, 512]
 
 trainer:
   max_steps: -1 #  will be computed during runtime as max_train_samples // batch_size / baseline: 28000 (with batch size 8)

@@ -129,7 +129,7 @@ class GarmentInpainterModule(pl.LightningModule):
         self.val_results.append(image_metrics)
 
         # find index of the easiest and hardest sample based on ssim
-        if batch_idx % 3 == 0:
+        if batch_idx % 3 == 0 and not self.cfg.debug:
             ssim_scores = image_metrics["ssim"]
             easiest_sample_idx = ssim_scores.argmax()
             hardest_sample_idx = ssim_scores.argmin()
@@ -159,25 +159,24 @@ class GarmentInpainterModule(pl.LightningModule):
             )
 
         # log also selected texture names
-        selected_texture_names = self.cfg.data.val_sel_texture_names
-        batch_names = batch["name"]
-        sel_figures = dict()
-        for i, name in enumerate(selected_texture_names):
-            if name in batch_names:
-                idx = batch_names.index(name)
-                figure = get_input_output_plot(
-                    batch["partial_diffuse_img"][idx],
-                    batch["full_diffuse_img"][idx],
-                    reconstructed_imgs[idx]
-                )
-                sel_figures[f"val-images/sel_figure_{i}"] = wandb.Image(figure, caption=name)
+        if not self.cfg.debug:
+            selected_texture_names = self.cfg.data.val_sel_texture_names
+            batch_names = batch["name"]
+            sel_figures = dict()
+            for i, name in enumerate(selected_texture_names):
+                if name in batch_names:
+                    idx = batch_names.index(name)
+                    figure = get_input_output_plot(
+                        batch["partial_diffuse_img"][idx],
+                        batch["full_diffuse_img"][idx],
+                        reconstructed_imgs[idx]
+                    )
+                    sel_figures[f"val-images/sel_figure_{i}"] = wandb.Image(figure, caption=name)
 
-        wandb.log(
-            sel_figures,
-            step=self.global_step
-        )
-
-
+            wandb.log(
+                sel_figures,
+                step=self.global_step
+            )
 
     def on_validation_epoch_end(self):
         metrics = {}
