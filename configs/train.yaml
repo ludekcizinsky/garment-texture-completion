@@ -21,12 +21,12 @@ data:
   pbr_maps_path: "/scratch/izar/cizinsky/garment-completion/pbr_maps/dresscode"
   mask_path: "/scratch/izar/cizinsky/garment-completion/masks/shirt.png"
   num_workers: 20
-  batch_size: 20 # baseline: 64
+  batch_size: 50 # baseline: 64
   res: 512 # baseline: 512
 
 # Optimisation
 optim:
-  lr: 1e-5
+  lr: 2.5e-5
   weight_decay: 1e-2
   warmup_steps: 1000
 
