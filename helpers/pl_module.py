@@ -1,4 +1,5 @@
 import torch
+from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 import torch.nn.functional as F
 import pytorch_lightning as pl
 
@@ -35,6 +36,7 @@ class GarmentInpainterModule(pl.LightningModule):
             vae=self.model.vae_diffuse,
             revision=None,
             safety_checker=None,
+            requires_safety_checker=False,
             torch_dtype=torch.float32,
         ).to("cuda")
 
@@ -205,13 +207,42 @@ class GarmentInpainterModule(pl.LightningModule):
         self.val_results = []    
 
     def configure_optimizers(self):
+        # 1) Optimizer
         optimizer = torch.optim.AdamW(
             self.model.parameters(),
             lr=self.lr,
-            weight_decay=self.weight_decay,
+            betas=(0.9, 0.999),
+            weight_decay=self.weight_decay
         )
-        
-        return optimizer
+
+        # 2) Make your two schedulers
+        warmup = LinearLR(
+            optimizer,
+            start_factor=1e-8,
+            end_factor=1.0,
+            total_iters=self.cfg.optim.warmup_steps
+        )
+        cosine = CosineAnnealingLR(
+            optimizer,
+            T_max=self.cfg.trainer.max_steps - self.cfg.optim.warmup_steps,
+            eta_min=self.cfg.optim.min_lr
+        )
+
+        # 3) Chain them *sequentially*, switching at warmup_steps
+        scheduler = SequentialLR(
+            optimizer,
+            schedulers=[warmup, cosine],
+            milestones=[self.cfg.optim.warmup_steps]
+        )
+
+        return {
+            'optimizer': optimizer,
+            'lr_scheduler': {
+                'scheduler': scheduler,
+                'interval': 'step',
+                'frequency': 1
+            }
+        }
 
     def on_save_checkpoint(self, checkpoint):
         trn_dataset = self.trn_dataloader.dataset
