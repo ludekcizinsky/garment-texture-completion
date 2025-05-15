@@ -23,8 +23,10 @@ def get_callbacks(cfg, exp_name):
     grad_norm_cb = GradNormWithClip(cfg)
     scheduler_cb =  WarmupPlateauScheduler(cfg)
     progress_cb = StepProgressBar()
-    ema_cb = TorchEMACallback(cfg.optim.ema_decay)
-    callbacks = [checkpoint_cb, scheduler_cb, grad_norm_cb, ema_cb, progress_cb]
+    callbacks = [checkpoint_cb, scheduler_cb, grad_norm_cb, progress_cb]
+    if cfg.optim.use_ema:
+        ema_cb = TorchEMACallback(cfg.optim.ema_decay)
+        callbacks.append(ema_cb)
 
     ckpt_path = find_checkpoint_to_resume_from(cfg, exp_name)
 
@@ -81,15 +83,11 @@ class TorchEMACallback(Callback):
         if self.ema is not None:
             self.ema.store()
             self.ema.copy_to()
-        else:
-            print("FYI: val start and no EMA found")
 
     def on_validation_end(self, trainer, pl_module):
         # restore original parameters
         if self.ema is not None:
             self.ema.restore()
-        else:
-            print("FYI: val end and no EMA found")
 
     def on_save_checkpoint(self, trainer, pl_module, checkpoint: dict):
         # Persist the EMA state dict alongside the Lightning checkpoint

@@ -154,7 +154,8 @@ class GarmentInpainterModule(pl.LightningModule):
                 {
                     f"val-images/easiest_pred_batch_{batch_idx}": wandb.Image(easiest_pred_plot, caption=batch["name"][easiest_sample_idx]),
                     f"val-images/hardest_pred_batch_{batch_idx}": wandb.Image(hardest_pred_plot, caption=batch["name"][hardest_sample_idx]),
-                }
+                },
+                step=self.global_step
             )
 
         # log also selected texture names
@@ -171,7 +172,7 @@ class GarmentInpainterModule(pl.LightningModule):
                 )
                 sel_figures[f"val-images/sel_figure_{i}"] = wandb.Image(figure, caption=name)
 
-        wandb.log(sel_figures)
+        wandb.log(sel_figures, step=self.global_step)
 
 
 

@@ -47,6 +47,7 @@ optim:
 
   # EMA
   ema_decay: 0.999
+  use_ema: false # baseline: true
 
 model:
   vae_path: "/home/cizinsky/garment-texture-completion/data_generation/dresscode/material_gen"
