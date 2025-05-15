@@ -6,6 +6,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.utilities import grad_norm
 
+from torch_ema import ExponentialMovingAverage
 import torch
 from torch.nn.utils import clip_grad_norm_
 
@@ -22,7 +23,8 @@ def get_callbacks(cfg, exp_name):
     grad_norm_cb = GradNormWithClip(cfg)
     scheduler_cb =  WarmupPlateauScheduler(cfg)
     progress_cb = StepProgressBar()
-    callbacks = [checkpoint_cb, scheduler_cb, grad_norm_cb, progress_cb]
+    ema_cb = TorchEMACallback(cfg.optim.ema_decay)
+    callbacks = [checkpoint_cb, scheduler_cb, grad_norm_cb, ema_cb, progress_cb]
 
     ckpt_path = find_checkpoint_to_resume_from(cfg, exp_name)
 
@@ -37,6 +39,65 @@ def find_checkpoint_to_resume_from(cfg, run_name):
             ckpt_path = sorted(all_ckpts, key=os.path.getmtime)[-1]
 
     return ckpt_path
+
+
+class TorchEMACallback(Callback):
+    def __init__(self, decay=0.999):
+        super().__init__()
+        self.decay = decay
+        self.ema = None
+        self.ema_state_dict = None
+
+    def on_train_start(self, trainer, pl_module):
+        # register model parameters with EMA
+        trainable_params = [p for p in pl_module.model.parameters() if p.requires_grad]
+        self.ema = ExponentialMovingAverage(trainable_params, decay=self.decay)
+
+        if self.ema_state_dict is not None:
+            self.ema.load_state_dict(self.ema_state_dict)
+
+        self.ema.to(pl_module.device, dtype=torch.float32)
+
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
+        # step EMA update
+        self.ema.update()
+
+        # Now compute and log the diff each batch
+        total_diff = torch.tensor(0.0, device=pl_module.device)
+        trainable_params = [p for p in pl_module.model.parameters() if p.requires_grad]
+        for param, ema_param in zip(
+            trainable_params,
+            self.ema.shadow_params
+        ):
+            ema_p = ema_param.to(param.device)
+            total_diff += torch.norm(param.detach() - ema_p)
+
+        # Log per-batch. You can turn prog_bar off if it's too chatty.
+        pl_module.log("optim/ema_diff", total_diff, on_step=True, on_epoch=False)
+
+
+    def on_validation_start(self, trainer, pl_module):
+        # copy EMA weights into the model
+        if self.ema is not None:
+            self.ema.store()
+            self.ema.copy_to()
+        else:
+            print("FYI: val start and no EMA found")
+
+    def on_validation_end(self, trainer, pl_module):
+        # restore original parameters
+        if self.ema is not None:
+            self.ema.restore()
+        else:
+            print("FYI: val end and no EMA found")
+
+    def on_save_checkpoint(self, trainer, pl_module, checkpoint: dict):
+        # Persist the EMA state dict alongside the Lightning checkpoint
+        checkpoint["ema_state_dict"] = self.ema.state_dict()
+        return checkpoint
+
+    def on_load_checkpoint(self, trainer, pl_module, callback_state: dict):
+        self.ema_state_dict = callback_state["ema_state_dict"]
 
 
 class StepProgressBar(Callback):

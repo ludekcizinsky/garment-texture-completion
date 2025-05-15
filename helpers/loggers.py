@@ -1,3 +1,4 @@
+import wandb
 from datetime import datetime
 from pytorch_lightning.loggers import WandbLogger, TensorBoardLogger
 from omegaconf import OmegaConf

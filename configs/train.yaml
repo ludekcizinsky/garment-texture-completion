@@ -45,6 +45,9 @@ optim:
   ddim_loss: true # baseline: true
   ddim_loss_weight: 0.5
 
+  # EMA
+  ema_decay: 0.999
+
 model:
   vae_path: "/home/cizinsky/garment-texture-completion/data_generation/dresscode/material_gen"
   diffusion_path: "stable-diffusion-v1-5/stable-diffusion-v1-5"

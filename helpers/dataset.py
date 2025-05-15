@@ -7,6 +7,7 @@ import torch
 from torch.utils.data import IterableDataset, get_worker_info
 from multiprocessing import Manager
 
+from tqdm import tqdm
 
 from helpers import data_utils
 
@@ -56,7 +57,7 @@ class InpaintingDataset(utils.data.Dataset):
             os.path.join(cfg.data.pbr_maps_path, folder)
             for folder in os.listdir(cfg.data.pbr_maps_path)
         ])
-        self.texture_paths = [path for path in self.texture_paths if os.path.exists(os.path.join(path, "texture_diffuse.png"))]
+        # self.texture_paths = [path for path in tqdm(self.texture_paths, desc="Loading texture paths") if os.path.exists(os.path.join(path, "texture_diffuse.png"))]
 
         if selected_indices is not None:
             self.texture_paths = [self.texture_paths[i] for i in selected_indices]

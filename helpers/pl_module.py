@@ -10,7 +10,6 @@ from helpers.plots import get_input_output_plot
 
 from diffusers import StableDiffusionInstructPix2PixPipeline, AutoencoderKL
 
-from tqdm import tqdm
 import wandb
 
 class GarmentInpainterModule(pl.LightningModule):
@@ -34,6 +33,7 @@ class GarmentInpainterModule(pl.LightningModule):
             unet=self.model.unet,
             vae=self.model.vae_diffuse,
             revision=None,
+            requires_safety_checker=False,
             safety_checker=None,
             torch_dtype=torch.float32,
         ).to("cuda")
@@ -154,8 +154,7 @@ class GarmentInpainterModule(pl.LightningModule):
                 {
                     f"val-images/easiest_pred_batch_{batch_idx}": wandb.Image(easiest_pred_plot, caption=batch["name"][easiest_sample_idx]),
                     f"val-images/hardest_pred_batch_{batch_idx}": wandb.Image(hardest_pred_plot, caption=batch["name"][hardest_sample_idx]),
-                },
-                step=self.global_step
+                }
             )
 
         # log also selected texture names
@@ -172,10 +171,7 @@ class GarmentInpainterModule(pl.LightningModule):
                 )
                 sel_figures[f"val-images/sel_figure_{i}"] = wandb.Image(figure, caption=name)
 
-        wandb.log(
-            sel_figures,
-            step=self.global_step
-        )
+        wandb.log(sel_figures)
 
 
 
