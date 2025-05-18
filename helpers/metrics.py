@@ -51,7 +51,7 @@ def compute_lpips(preds: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
     """
     preds = preds.float()
     targets = targets.float()
-    result = lpips(preds, targets, reduction="sum", normalize=True, net_type='alex')
+    result = lpips(preds, targets, reduction=None, normalize=True, net_type='alex')
     return result
 
 

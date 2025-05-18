@@ -8,7 +8,7 @@ from helpers.metrics import compute_all_metrics
 from helpers.data_utils import denormalise_image_torch, pil_to_tensor
 from helpers.plots import get_input_output_plot
 
-from diffusers import StableDiffusionInstructPix2PixPipeline, AutoencoderKL
+from diffusers import StableDiffusionInstructPix2PixPipeline
 
 import wandb
 
@@ -184,15 +184,10 @@ class GarmentInpainterModule(pl.LightningModule):
                     metrics[k] = []
                 metrics[k].append(v)
 
-        total = None
         agg_metrics = {}
         for k, v in metrics.items():
-            if k != "lpips":
-                all_results = torch.cat(v)
-                total = len(all_results)
-                agg_metrics[k] = all_results.mean()
-
-        agg_metrics["lpips"] = sum(metrics["lpips"]).item() / total
+            all_results = torch.cat(v)
+            agg_metrics[k] = all_results.mean()
 
         self.log_dict(
             {
