@@ -227,7 +227,9 @@ class GarmentInpainterModule(pl.LightningModule):
 
         prompts = [self.prompt]*len(partial_diffuse_imgs)
         zero_one_img_tensors = denormalise_image_torch(partial_diffuse_imgs)
-        self.inference_pipe.unet = self.model.unet
+        self.inference_pipe.unet = self.model.unet.to(dtype=torch.float32)
+        self.inference_pipe.vae = self.model.vae_diffuse.to(dtype=torch.float32)
+
         preds = self.inference_pipe(
             prompts,
             image=zero_one_img_tensors,
