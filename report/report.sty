@@ -1,0 +1,42 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{report}[2025/05/18 Report Style]
+
+% Always use 11pt
+\DeclareOption*{\PassOptionsToClass{\CurrentOption}{article}}
+\ProcessOptions\relax
+
+% Font and spacing
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\usepackage{microtype}           % Better text spacing
+\usepackage{geometry}            % Margins
+\usepackage{graphicx}            % Images
+\usepackage{amsmath,amssymb}     % Math
+\usepackage[numbers]{natbib}     % References
+\usepackage{enumitem}            % Compact lists
+
+% Margin setup: modest but readable
+\geometry{
+  top=0.75in,
+  bottom=0.75in,
+  left=1.0in,
+  right=1.0in
+}
+
+% Section spacing (slightly compact)
+\usepackage[compact]{titlesec}
+\titlespacing{\section}{0pt}{*2}{*1}
+\titlespacing{\subsection}{0pt}{*1.5}{*0.8}
+
+% Paragraphs: no indent, small vertical space
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 1pt}
+
+% Line spacing: normal
+\renewcommand{\baselinestretch}{1.0}
+
+% Figure spacing
+\setlength{\abovecaptionskip}{6pt}
+\setlength{\belowcaptionskip}{0pt}
+
+\pagenumbering{gobble}

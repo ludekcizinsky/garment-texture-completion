@@ -1,0 +1,51 @@
+\PassOptionsToPackage{authoryear,round}{natbib}
+\documentclass[11pt]{article}
+\usepackage{report}
+
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{titling}
+\usepackage{caption}
+\captionsetup{labelsep=period}
+%\usepackage[font=small]{caption}
+\setlength{\droptitle}{-40pt}  % Adjust as needed
+
+\usepackage{titlesec}
+
+\titlespacing{\section}
+  {0pt}    % left margin
+  {0.7ex plus 0.5ex minus .2ex}  % space before section title
+  {0.7ex plus .2ex}  % space after section title (before paragraph)
+
+\titlespacing{\subsection}
+  {0pt}
+  {1.2ex plus 0.3ex minus .2ex}
+  {0.6ex plus .1ex}
+
+\title{\vspace{-1em}{\Large\textbf{Hyper-Network Generating Neural Cellular Automata for Texture Synthesis}}\vspace{-1em}}
+
+\author{
+  \begin{tabular}{c c}
+  Ludek Cizinsky\thanks{Conducted as part of a 12 ECTS EPFL research project, with Ehsan supervising. Contributed the literature review, autoencoder, training pipeline refactor to enable easier experimentations and more fine grained evaluation, architecture hyper-parameter search and conditioning ablation as well as the figure design.} & Ehsan Pajouheshgar \\
+  \texttt{ludek.cizinsky@epfl.ch} & \texttt{ehsan.pajourheshgar@epfl.ch} \\
+  EPFL & EPFL
+  \end{tabular}
+}
+
+\begin{document}
+
+\date{}
+\maketitle
+
+
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
