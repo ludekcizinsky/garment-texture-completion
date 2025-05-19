@@ -7,7 +7,7 @@ max_n_batches: 5 # 1 batch = 20 samples
 image_guidance_scale: [1.5, 2.5, 5.0, 7.5, 10.0]
 text_guidance_scale: [1.5, 2.5, 5.0, 7.5, 10.0]
 
-output_dir: "outputs/eval_results/inference_setup"
+output_dir: "/home/cizinsky/garment-texture-completion/outputs/eval_results/inference_setup"
 
 hydra:
   run:

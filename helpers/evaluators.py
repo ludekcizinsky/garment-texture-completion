@@ -71,7 +71,7 @@ def get_best_inference_setup_results(eval_cfg):
     df = pd.DataFrame(rows, columns=["sample_idx", "img_scale", "text_scale", "ssim", "psnr", "lpips"])
 
     os.makedirs(eval_cfg.output_dir, exist_ok=True)
-    file_path = f"{eval_cfg.output_dir}/{eval_cfg.run_name}.csv"
+    file_path = os.path.join(eval_cfg.output_dir, f"{eval_cfg.run_name}.csv")
     df.to_csv(file_path, index=False)
 
     run = wandb.init(entity=eval_cfg.entity, project=eval_cfg.project, id=eval_cfg.run_id, resume="must")
