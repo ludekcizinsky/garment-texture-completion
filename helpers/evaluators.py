@@ -96,6 +96,7 @@ def run_post_train_evaluation(eval_cfg):
         cfg.data.val_debug_size = eval_cfg.val_debug_size
         cfg.optim.use_cosine_scheduler = eval_cfg.use_cosine_scheduler
         cfg.model.train_from_scratch = eval_cfg.train_from_scratch
+        cfg.model.train_with_lora = eval_cfg.train_with_lora
 
         print("FYI: Loading model and data")
         pl.seed_everything(cfg.seed)

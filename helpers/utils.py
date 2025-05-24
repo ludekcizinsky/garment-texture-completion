@@ -1,12 +1,15 @@
 import torch
 from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
+from peft import LoraConfig, get_peft_model
 from diffusers import UNet2DConditionModel
 import torch.nn as nn
 
 def get_optimizer(cfg, model, return_dict):
 
+    trainable_params = [p for p in model.parameters() if p.requires_grad]
+
     optimizer = torch.optim.AdamW(
-        model.parameters(),
+        trainable_params,
         lr=cfg.optim.lr,
         betas=(0.9, 0.999),
         weight_decay=cfg.optim.weight_decay
@@ -79,6 +82,15 @@ def modify_unet(unet):
 
     return unet
 
+def init_finetune_unet(cfg):
+    unet = UNet2DConditionModel.from_pretrained(
+        cfg.model.diffusion_path, subfolder="unet",
+    )
+    unet.enable_gradient_checkpointing()
+    unet = modify_unet(unet)
+
+    return unet
+
 def init_custom_unet(cfg):
     """
     Get a custom UNet with extended input channels.
@@ -97,16 +109,34 @@ def init_custom_unet(cfg):
 
     return unet
 
+def init_lora_unet(cfg):
+
+    unet = UNet2DConditionModel.from_pretrained(
+        cfg.model.diffusion_path, subfolder="unet",
+    )
+    for param in unet.parameters():
+        param.requires_grad = False
+
+    lora_unet_cfg = LoraConfig(
+        r=8,
+        lora_alpha=8,
+        init_lora_weights="gaussian",
+        target_modules=["to_k", "to_q", "to_v", "to_out.0"],
+        lora_dropout=0.05,
+        bias="none",
+    )
+    unet = get_peft_model(unet, lora_unet_cfg)
+
+    return unet
+
 
 def get_unet_model(cfg):
     
     if cfg.model.train_from_scratch:
         unet = init_custom_unet(cfg)
+    elif cfg.model.train_with_lora:
+        unet = init_lora_unet(cfg)
     else:
-        unet = UNet2DConditionModel.from_pretrained(
-            cfg.model.diffusion_path, subfolder="unet",
-        )
-        unet.enable_gradient_checkpointing()
-        unet = modify_unet(unet)
+        unet = init_finetune_unet(cfg)
 
     return unet

@@ -29,3 +29,7 @@ python eval_post_train.py evaluation.run_name=glowing-disco-164 evaluation.run_i
 
 # From scratch
 python eval_post_train.py evaluation.run_name=stellar-feather-136 evaluation.run_id=y5appjkm evaluation.train_from_scratch=True
+
+# Lora
+python eval_post_train.py evaluation.run_name=cosmic-cosmos-123 evaluation.run_id=b835hnfq evaluation.train_with_lora=True
+python eval_post_train.py evaluation.run_name=morning-microwave-118 evaluation.run_id=ha6wswub evaluation.train_with_lora=True

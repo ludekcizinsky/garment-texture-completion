@@ -5,8 +5,8 @@ import torch.nn as nn
 
 from transformers import CLIPTextModel, CLIPTokenizer
 from diffusers import AutoencoderKL, DDPMScheduler
-
 from helpers.utils import get_unet_model
+
 
 class GarmentDenoiser(nn.Module):
     def __init__(self, cfg):
