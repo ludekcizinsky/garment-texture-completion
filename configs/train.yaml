@@ -11,6 +11,7 @@ logger:
 
 data:
   val_size: 300
+  val_debug_size: -1
   val_sel_texture_names: [
     "Denim_Magenta_Floral_Print",
     "Herringbone_Lime_Green_Animal_Print_(Leopard)",

@@ -1,4 +1,5 @@
 import os
+import traceback
 
 import pytorch_lightning as pl
 
@@ -78,3 +79,39 @@ def get_best_inference_setup_results(eval_cfg):
     wandb_table = wandb.Table(dataframe=df)
     run.log({"best_inference_setup": wandb_table})
     run.finish()
+
+
+def run_post_train_evaluation(run_name, run_id, entity="ludekcizinsky", project="pbr-generation"):
+
+    try:
+        # Setup
+        checkpoint, cfg = load_checkpoint_and_cfg(run_name)
+        pl.seed_everything(cfg.seed)
+        model, val_dataloader = load_model_and_data(cfg, checkpoint)
+        trainer = pl.Trainer(accelerator="gpu", devices=1, logger=False, callbacks=[])
+
+        # Predict
+        outputs = trainer.predict(model, val_dataloader)
+
+        # Compute metrics
+        all_ssim = torch.cat([output["ssim"] for output in outputs])
+        all_psnr = torch.cat([output["psnr"] for output in outputs])
+        all_lpips = torch.cat([output["lpips"] for output in outputs])
+
+        mean_ssim = all_ssim.mean()
+        mean_psnr = all_psnr.mean()
+        mean_lpips = all_lpips.mean()
+
+        # Log
+        run = wandb.init(entity=entity, project=project, id=run_id, resume="must")
+        run.summary.update({
+            "final_eval/ssim": mean_ssim,
+            "final_eval/psnr": mean_psnr,
+            "final_eval/lpips": mean_lpips
+        })
+        run.finish()
+    except Exception as e:
+        print(f"Error: {e}")
+        print(f"Traceback: {traceback.format_exc()}")
+        print("-" * 50)
+        wandb.finish()

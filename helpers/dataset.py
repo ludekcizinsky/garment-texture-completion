@@ -15,9 +15,13 @@ def get_dataloaders(cfg):
     full_ds = InpaintingDataset(cfg)
     N = len(full_ds)
 
+    np.random.seed(cfg.seed)
     all_idx = np.random.permutation(N)
     split   = N - cfg.data.val_size
     train_idx, val_idx = all_idx[:split].tolist(), all_idx[split:].tolist()
+
+    if cfg.data.val_debug_size > 0:
+        val_idx = val_idx[:cfg.data.val_debug_size]
 
     # Create a Manager + shared dict for worker positions
     manager = Manager()

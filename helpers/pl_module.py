@@ -175,7 +175,6 @@ class GarmentInpainterModule(pl.LightningModule):
         wandb.log(sel_figures, step=self.global_step)
 
 
-
     def on_validation_epoch_end(self):
         metrics = {}
         for output in self.val_results:
@@ -195,6 +194,14 @@ class GarmentInpainterModule(pl.LightningModule):
             }
         )
         self.val_results = []    
+
+    def predict_step(self, batch, batch_idx):
+        reconstructed_imgs = self.inference(batch["partial_diffuse_img"])
+        reconstructed_imgs_tensors = torch.stack([pil_to_tensor(img) for img in reconstructed_imgs]).to(self.device)
+        target_imgs = denormalise_image_torch(batch["full_diffuse_img"])
+        image_metrics = compute_all_metrics(reconstructed_imgs_tensors, target_imgs)
+
+        return image_metrics
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
@@ -217,8 +224,8 @@ class GarmentInpainterModule(pl.LightningModule):
     def inference(self,
                 partial_diffuse_imgs,
                 num_inference_steps=50,
-                guidance_scale=7.0,
-                image_guidance_scale=1.5):
+                guidance_scale=1.5,
+                image_guidance_scale=5.0):
 
         prompts = [self.prompt]*len(partial_diffuse_imgs)
         zero_one_img_tensors = denormalise_image_torch(partial_diffuse_imgs)
