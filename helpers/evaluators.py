@@ -3,6 +3,8 @@ import traceback
 
 import pytorch_lightning as pl
 
+from omegaconf import OmegaConf
+
 import torch
 from torchvision.transforms.functional import pil_to_tensor
 from torchvision.utils import make_grid
@@ -81,14 +83,21 @@ def get_best_inference_setup_results(eval_cfg):
     run.finish()
 
 
-def run_post_train_evaluation(run_name, run_id, entity="ludekcizinsky", project="pbr-generation"):
+def run_post_train_evaluation(eval_cfg):
 
     try:
         # Setup
         print("FYI: Loading checkpoint")
-        checkpoint, cfg = load_checkpoint_and_cfg(run_name)
-        pl.seed_everything(cfg.seed)
+        checkpoint, cfg = load_checkpoint_and_cfg(eval_cfg.run_name)
+
+        # Add some additional configs due to (cos lr, lora, from scratch)
+        OmegaConf.set_struct(cfg, False)
+        cfg.data.trn_debug_size = eval_cfg.trn_debug_size
+        cfg.data.val_debug_size = eval_cfg.val_debug_size
+        cfg.optim.use_cosine_scheduler = eval_cfg.use_cosine_scheduler
+
         print("FYI: Loading model and data")
+        pl.seed_everything(cfg.seed)
         model, val_dataloader = load_model_and_data(cfg, checkpoint)
         trainer = pl.Trainer(accelerator="gpu", devices=1, logger=False, callbacks=[])
 
@@ -105,7 +114,7 @@ def run_post_train_evaluation(run_name, run_id, entity="ludekcizinsky", project=
         mean_lpips = all_lpips.mean()
 
         # Log
-        run = wandb.init(entity=entity, project=project, id=run_id, resume="must")
+        run = wandb.init(entity=eval_cfg.entity, project=eval_cfg.project, id=eval_cfg.run_id, resume="must")
         run.summary.update({
             "final_eval/ssim": mean_ssim,
             "final_eval/psnr": mean_psnr,

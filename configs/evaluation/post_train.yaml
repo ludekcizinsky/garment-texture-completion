@@ -4,6 +4,12 @@ project: pbr-generation
 run_name: twilight-sponge-160
 run_id: fstkreeo
 
+# Additinional configs that I will later need to add to main
+use_cosine_scheduler: false 
+trn_debug_size: -1
+val_debug_size: -1
+
+
 hydra:
   run:
     dir: outputs/hydra/${now:%Y-%m-%d}_${now:%H-%M-%S}

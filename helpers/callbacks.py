@@ -2,8 +2,8 @@ from tqdm import tqdm
 import os
 import glob
 
-from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.callbacks import Callback
+import pytorch_lightning as pl
+from pytorch_lightning.callbacks import ModelCheckpoint, Callback
 from pytorch_lightning.utilities import grad_norm
 
 from torch_ema import ExponentialMovingAverage
@@ -21,9 +21,15 @@ def get_callbacks(cfg, exp_name):
         save_last=True,
     )
     grad_norm_cb = GradNormWithClip(cfg)
-    scheduler_cb =  WarmupPlateauScheduler(cfg)
     progress_cb = StepProgressBar()
-    callbacks = [checkpoint_cb, scheduler_cb, grad_norm_cb, progress_cb]
+    callbacks = [checkpoint_cb, grad_norm_cb, progress_cb]
+    if not cfg.optim.use_cosine_scheduler:
+        scheduler_cb = WarmupPlateauScheduler(cfg)
+        callbacks.append(scheduler_cb)
+    else:
+        lr_cb = LearningRateMonitorStep()
+        callbacks.append(lr_cb)
+
     if cfg.optim.use_ema:
         ema_cb = TorchEMACallback(cfg.optim.ema_decay)
         callbacks.append(ema_cb)
@@ -225,3 +231,14 @@ class GradNormWithClip(Callback):
         # 4) Log both
         pl_module.log("optim/grad_norm_preclip", pre, on_epoch=False, on_step=True)
         pl_module.log("optim/grad_norm_postclip", post, on_epoch=False, on_step=True)
+
+class LearningRateMonitorStep(Callback):
+    """Logs the learning rate every training step under 'optim/lr'."""
+
+    def on_train_batch_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule,
+                           outputs, batch, batch_idx: int) -> None:
+        # Grab the first optimizer and its first param_group
+        optimizer = trainer.optimizers[0]
+        lr = optimizer.param_groups[0]['lr']
+        # Log it (step-wise, no epoch aggregation)
+        pl_module.log("optim/lr", lr, on_epoch=False, on_step=True)

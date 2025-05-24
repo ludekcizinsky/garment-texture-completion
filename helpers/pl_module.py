@@ -7,6 +7,7 @@ from helpers.losses import ddim_loss as ddim_loss_f
 from helpers.metrics import compute_all_metrics
 from helpers.data_utils import denormalise_image_torch, pil_to_tensor
 from helpers.plots import get_input_output_plot
+from helpers.utils import get_optimizer, get_lr_scheduler
 
 from diffusers import StableDiffusionInstructPix2PixPipeline
 
@@ -204,13 +205,10 @@ class GarmentInpainterModule(pl.LightningModule):
         return image_metrics
 
     def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(
-            self.model.parameters(),
-            lr=self.lr,
-            weight_decay=self.weight_decay,
-        )
-        
-        return optimizer
+        return_dict = {}
+        return_dict = get_optimizer(self.cfg, self.model, return_dict)
+        return_dict = get_lr_scheduler(self.cfg, return_dict)
+        return return_dict
 
     def on_save_checkpoint(self, checkpoint):
         trn_dataset = self.trn_dataloader.dataset

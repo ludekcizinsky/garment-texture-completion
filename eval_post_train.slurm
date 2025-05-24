@@ -23,3 +23,6 @@ python eval_post_train.py evaluation.run_name=honest-bird-113 evaluation.run_id=
 
 # EMA
 python eval_post_train.py evaluation.run_name=grateful-terrain-163 evaluation.run_id=2afus61b
+
+# LR cos scheduler
+python eval_post_train.py evaluation.run_name=glowing-disco-164 evaluation.run_id=dg766dgh evaluation.use_cosine_scheduler=True

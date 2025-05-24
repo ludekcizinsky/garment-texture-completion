@@ -10,7 +10,7 @@ def evaluate(cfg: DictConfig):
     print(OmegaConf.to_yaml(cfg.evaluation))
     print("-"*100)
 
-    run_post_train_evaluation(cfg.evaluation.run_name, cfg.evaluation.run_id, cfg.evaluation.entity, cfg.evaluation.project)
+    run_post_train_evaluation(cfg.evaluation)
 
 
 if __name__ == "__main__":
