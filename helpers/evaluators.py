@@ -85,8 +85,10 @@ def run_post_train_evaluation(run_name, run_id, entity="ludekcizinsky", project=
 
     try:
         # Setup
+        print("FYI: Loading checkpoint")
         checkpoint, cfg = load_checkpoint_and_cfg(run_name)
         pl.seed_everything(cfg.seed)
+        print("FYI: Loading model and data")
         model, val_dataloader = load_model_and_data(cfg, checkpoint)
         trainer = pl.Trainer(accelerator="gpu", devices=1, logger=False, callbacks=[])
 

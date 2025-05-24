@@ -7,8 +7,6 @@ import torch
 from torch.utils.data import IterableDataset, get_worker_info
 from multiprocessing import Manager
 
-from tqdm import tqdm
-
 from helpers import data_utils
 
 def get_dataloaders(cfg):
@@ -20,7 +18,7 @@ def get_dataloaders(cfg):
     split   = N - cfg.data.val_size
     train_idx, val_idx = all_idx[:split].tolist(), all_idx[split:].tolist()
 
-    if cfg.data.val_debug_size > 0:
+    if cfg.data.get("val_debug_size", 0) > 0 and cfg.data.val_debug_size > 0:
         val_idx = val_idx[:cfg.data.val_debug_size]
 
     # Create a Manager + shared dict for worker positions

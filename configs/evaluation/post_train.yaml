@@ -1,0 +1,11 @@
+entity: ludekcizinsky
+project: pbr-generation
+
+run_name: twilight-sponge-160
+run_id: fstkreeo
+
+hydra:
+  run:
+    dir: outputs/hydra/${now:%Y-%m-%d}_${now:%H-%M-%S}
+  job:
+    chdir: False
