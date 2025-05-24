@@ -4,6 +4,7 @@ import traceback
 import pytorch_lightning as pl
 
 from omegaconf import OmegaConf
+from hydra import initialize, compose
 
 import torch
 from torchvision.transforms.functional import pil_to_tensor
@@ -35,7 +36,8 @@ def load_model_and_data(cfg, checkpoint):
 
     model = GarmentInpainterModule(cfg, trn_dataloader)
     model.setup()
-    model.load_state_dict(checkpoint["state_dict"])
+    if checkpoint is not None:
+        model.load_state_dict(checkpoint["state_dict"])
     model.eval()
     model.to("cuda")
 
@@ -87,8 +89,13 @@ def run_post_train_evaluation(eval_cfg):
 
     try:
         # Setup
-        print("FYI: Loading checkpoint")
-        checkpoint, cfg = load_checkpoint_and_cfg(eval_cfg.run_name)
+        if not eval_cfg.use_pretrained_unet:
+            print("FYI: Loading checkpoint")
+            checkpoint, cfg = load_checkpoint_and_cfg(eval_cfg.run_name)
+        else:
+            cfg = OmegaConf.load("/home/cizinsky/garment-texture-completion/configs/train.yaml")
+            cfg.model.diffusion_path = "timbrooks/instruct-pix2pix"
+            checkpoint = None
 
         # Add some additional configs due to (cos lr, lora, from scratch)
         OmegaConf.set_struct(cfg, False)
@@ -97,6 +104,7 @@ def run_post_train_evaluation(eval_cfg):
         cfg.optim.use_cosine_scheduler = eval_cfg.use_cosine_scheduler
         cfg.model.train_from_scratch = eval_cfg.train_from_scratch
         cfg.model.train_with_lora = eval_cfg.train_with_lora
+        cfg.model.use_pretrained_unet = eval_cfg.use_pretrained_unet
 
         print("FYI: Loading model and data")
         pl.seed_everything(cfg.seed)
@@ -116,7 +124,11 @@ def run_post_train_evaluation(eval_cfg):
         mean_lpips = all_lpips.mean()
 
         # Log
-        run = wandb.init(entity=eval_cfg.entity, project=eval_cfg.project, id=eval_cfg.run_id, resume="must")
+        if not eval_cfg.use_pretrained_unet:
+            run = wandb.init(entity=eval_cfg.entity, project=eval_cfg.project, id=eval_cfg.run_id, resume="must")
+        else:
+            run = wandb.init(entity=eval_cfg.entity, project=eval_cfg.project)
+
         run.summary.update({
             "final_eval/ssim": mean_ssim,
             "final_eval/psnr": mean_psnr,

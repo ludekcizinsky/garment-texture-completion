@@ -33,3 +33,6 @@ python eval_post_train.py evaluation.run_name=stellar-feather-136 evaluation.run
 # Lora
 python eval_post_train.py evaluation.run_name=cosmic-cosmos-123 evaluation.run_id=b835hnfq evaluation.train_with_lora=True
 python eval_post_train.py evaluation.run_name=morning-microwave-118 evaluation.run_id=ha6wswub evaluation.train_with_lora=True
+
+# From pretrained (instruct-pix2pix)
+python eval_post_train.py evaluation.run_name=null evaluation.run_id=null evaluation.use_pretrained_unet=True

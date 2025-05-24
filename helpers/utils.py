@@ -24,6 +24,7 @@ def get_lr_scheduler(cfg, return_dict):
     optimizer = return_dict["optimizer"]
 
     if cfg.optim.use_cosine_scheduler:
+        print("--- FYI: Using Cosine Scheduler")
         # Make your the two schedulers
         warmup = LinearLR(
             optimizer,
@@ -83,6 +84,8 @@ def modify_unet(unet):
     return unet
 
 def init_finetune_unet(cfg):
+    print("--- FYI: Initializing Finetune UNet")
+
     unet = UNet2DConditionModel.from_pretrained(
         cfg.model.diffusion_path, subfolder="unet",
     )
@@ -92,9 +95,7 @@ def init_finetune_unet(cfg):
     return unet
 
 def init_custom_unet(cfg):
-    """
-    Get a custom UNet with extended input channels.
-    """
+    print("--- FYI: Initializing Custom UNet")
 
     model_id = cfg.model.diffusion_path
     config = UNet2DConditionModel.load_config(
@@ -110,6 +111,7 @@ def init_custom_unet(cfg):
     return unet
 
 def init_lora_unet(cfg):
+    print("--- FYI: Initializing Lora UNet")
 
     unet = UNet2DConditionModel.from_pretrained(
         cfg.model.diffusion_path, subfolder="unet",
@@ -129,6 +131,16 @@ def init_lora_unet(cfg):
 
     return unet
 
+def init_pretrained_unet(cfg):
+    """
+    This should be used for the evaluation only.
+    """
+    print("--- FYI: Initializing Pretrained UNet")
+    unet = UNet2DConditionModel.from_pretrained(
+        cfg.model.diffusion_path, subfolder="unet",
+    )
+
+    return unet
 
 def get_unet_model(cfg):
     
@@ -136,6 +148,8 @@ def get_unet_model(cfg):
         unet = init_custom_unet(cfg)
     elif cfg.model.train_with_lora:
         unet = init_lora_unet(cfg)
+    elif cfg.model.use_pretrained_unet:
+        unet = init_pretrained_unet(cfg)
     else:
         unet = init_finetune_unet(cfg)
 

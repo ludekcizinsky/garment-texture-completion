@@ -11,6 +11,7 @@ val_debug_size: -1
 use_cosine_scheduler: false 
 train_from_scratch: false
 train_with_lora: false
+use_pretrained_unet: false
 
 
 hydra:
