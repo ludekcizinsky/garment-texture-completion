@@ -26,3 +26,6 @@ python eval_post_train.py evaluation.run_name=grateful-terrain-163 evaluation.ru
 
 # LR cos scheduler
 python eval_post_train.py evaluation.run_name=glowing-disco-164 evaluation.run_id=dg766dgh evaluation.use_cosine_scheduler=True
+
+# From scratch
+python eval_post_train.py evaluation.run_name=stellar-feather-136 evaluation.run_id=y5appjkm evaluation.train_from_scratch=True

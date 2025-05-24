@@ -1,5 +1,7 @@
 import torch
 from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
+from diffusers import UNet2DConditionModel
+import torch.nn as nn
 
 def get_optimizer(cfg, model, return_dict):
 
@@ -46,3 +48,65 @@ def get_lr_scheduler(cfg, return_dict):
         }
 
     return return_dict
+
+
+def modify_unet(unet):
+    """
+    TextureCompletion extends the input channels of the original UNet to take condition images.
+    This method modifies the UNet's input convolution layer.
+    """
+
+    # Set new number of input channels. For example, extending from 4 to 8.
+    in_channels = 8
+    out_channels = unet.conv_in.out_channels
+    
+    # Update the model configuration (if used later for saving or further adjustments).
+    unet.register_to_config(in_channels=in_channels)
+    
+    # Create a new conv layer with the extended number of input channels.
+    with torch.no_grad():
+        new_conv_in = nn.Conv2d(
+            in_channels,
+            out_channels,
+            unet.conv_in.kernel_size,
+            unet.conv_in.stride,
+            unet.conv_in.padding
+        )
+        # Initialize the new weights: copy weights for the original 4 channels and zero the rest.
+        new_conv_in.weight.zero_()
+        new_conv_in.weight[:, :4, :, :].copy_(unet.conv_in.weight)
+        unet.conv_in = new_conv_in
+
+    return unet
+
+def init_custom_unet(cfg):
+    """
+    Get a custom UNet with extended input channels.
+    """
+
+    model_id = cfg.model.diffusion_path
+    config = UNet2DConditionModel.load_config(
+        model_id, subfolder="unet"
+    )
+
+    config['cross_attention_dim'] = cfg.model.cross_attention_dim
+    config['block_out_channels'] = cfg.model.block_out_channels
+
+    unet = UNet2DConditionModel.from_config(config)
+    unet.enable_gradient_checkpointing()
+
+    return unet
+
+
+def get_unet_model(cfg):
+    
+    if cfg.model.train_from_scratch:
+        unet = init_custom_unet(cfg)
+    else:
+        unet = UNet2DConditionModel.from_pretrained(
+            cfg.model.diffusion_path, subfolder="unet",
+        )
+        unet.enable_gradient_checkpointing()
+        unet = modify_unet(unet)
+
+    return unet

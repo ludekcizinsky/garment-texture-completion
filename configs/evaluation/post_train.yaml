@@ -5,9 +5,11 @@ run_name: twilight-sponge-160
 run_id: fstkreeo
 
 # Additinional configs that I will later need to add to main
-use_cosine_scheduler: false 
 trn_debug_size: -1
 val_debug_size: -1
+
+use_cosine_scheduler: false 
+train_from_scratch: false
 
 
 hydra:
