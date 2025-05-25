@@ -11,6 +11,7 @@ logger:
 
 data:
   val_size: 300
+  trn_debug_size: -1
   val_debug_size: -1
   val_sel_texture_names: [
     "Denim_Magenta_Floral_Print",
@@ -31,12 +32,15 @@ optim:
   weight_decay: 1e-2
   warmup_steps: 1000
 
-  # Scheduler - reduce on plateau
+  # Scheduler
+  # - reduce on plateau (default)
   plateau_patience: 7 # how many val/f1 to wait before reducing
   plateau_factor: 0.5 # reduce by this factor
   min_lr: 1e-6  # minimum learning rate
   plateau_mode: "min" # mode for plateau scheduler
   plateau_metric: "val/lpips" # metric to monitor for plateau scheduler
+  # - cosine
+  use_cosine_scheduler: false # baseline: false
 
   # Gradient clipping
   max_grad_norm: 1.0 # gradient clipping
@@ -52,8 +56,18 @@ optim:
 
 model:
   vae_path: "/home/cizinsky/garment-texture-completion/data_generation/dresscode/material_gen"
-  diffusion_path: "stable-diffusion-v1-5/stable-diffusion-v1-5"
+  diffusion_path: "stable-diffusion-v1-5/stable-diffusion-v1-5" # stable-diffusion-v1-5/stable-diffusion-inpainting
   conditioning_dropout_prob: 0.05 # classifier-free guidance / baseline: 0.05
+
+  # UNet
+  use_finetune_unet: true # default
+  train_from_scratch: false
+  train_with_lora: false
+  use_pretrained_unet: false # only for evaluation
+
+
+  # type of unet
+  is_inpainting: false # if yes, then the model expects one extra channel in the input (the mask)
 
 trainer:
   max_steps: -1 #  will be computed during runtime as max_train_samples // batch_size / baseline: 28000 (with batch size 8)
