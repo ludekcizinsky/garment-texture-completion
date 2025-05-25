@@ -17,6 +17,9 @@ def get_correct_config(cfg):
     if cfg.trainer.max_steps == -1:
         cfg.trainer.max_steps = cfg.max_train_samples // cfg.data.batch_size
 
+    if cfg.model.is_inpainting:
+        cfg.model.diffusion_path = "sd-legacy/stable-diffusion-inpainting" # "stable-diffusion-v1-5/stable-diffusion-inpainting" 
+
     # Print the config
     print("-"*50)
     print(OmegaConf.to_yaml(cfg))  # print config to verify

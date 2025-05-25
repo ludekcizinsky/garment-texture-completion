@@ -90,7 +90,8 @@ def init_finetune_unet(cfg):
         cfg.model.diffusion_path, subfolder="unet",
     )
     unet.enable_gradient_checkpointing()
-    unet = modify_unet(unet)
+    if not cfg.model.is_inpainting:
+        unet = modify_unet(unet)
 
     return unet
 

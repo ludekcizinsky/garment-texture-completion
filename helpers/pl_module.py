@@ -9,7 +9,7 @@ from helpers.data_utils import denormalise_image_torch, pil_to_tensor
 from helpers.plots import get_input_output_plot
 from helpers.utils import get_optimizer, get_lr_scheduler
 
-from diffusers import StableDiffusionInstructPix2PixPipeline
+from diffusers import StableDiffusionInstructPix2PixPipeline, StableDiffusionInpaintPipeline
 
 import wandb
 
@@ -29,16 +29,31 @@ class GarmentInpainterModule(pl.LightningModule):
         self.prompt = "fill the missing parts of a fabric texture matching the existing colors and style"
         self.null_prompt = ""
 
-        self.inference_pipe = StableDiffusionInstructPix2PixPipeline.from_pretrained(
-            self.cfg.model.diffusion_path,
-            unet=self.model.unet,
-            vae=self.model.vae_diffuse,
-            revision=None,
-            requires_safety_checker=False,
-            safety_checker=None,
-            torch_dtype=torch.float32,
-        ).to("cuda")
+        self._get_inference_pipe()
 
+
+
+    def _get_inference_pipe(self):
+        if self.hparams.model.is_inpainting:
+            self.inference_pipe = StableDiffusionInpaintPipeline.from_pretrained(
+                self.cfg.model.diffusion_path,
+                unet=self.model.unet,
+                vae=self.model.vae_diffuse,
+                revision=None,
+                requires_safety_checker=False,
+                safety_checker=None,
+                torch_dtype=torch.float32,
+            ).to("cuda")           
+        else:
+            self.inference_pipe = StableDiffusionInstructPix2PixPipeline.from_pretrained(
+                self.cfg.model.diffusion_path,
+                unet=self.model.unet,
+                vae=self.model.vae_diffuse,
+                revision=None,
+                requires_safety_checker=False,
+                safety_checker=None,
+                torch_dtype=torch.float32,
+            ).to("cuda")           
 
     def setup(self, stage=None):
         # Called once per device
@@ -49,9 +64,14 @@ class GarmentInpainterModule(pl.LightningModule):
         return torch.float16 if self.cfg.trainer.precision == "16-mixed" else torch.float32
 
 
-    def forward(self, noisy_latents, timesteps, text_embeds, partial_image_embeds):
+    def forward(self, noisy_latents, timesteps, text_embeds, partial_image_embeds, masks):
+        if self.hparams.model.is_inpainting:
+            denoiser_input = torch.cat([noisy_latents, masks, partial_image_embeds], dim=1)
+        else:
+            denoiser_input = torch.cat([noisy_latents, partial_image_embeds], dim=1)
+
         model_pred =  self.model.denoise_step(
-                    torch.cat([noisy_latents, partial_image_embeds], dim=1),
+                    denoiser_input,
                     timesteps,
                     text_embeds
                 )
@@ -59,7 +79,7 @@ class GarmentInpainterModule(pl.LightningModule):
 
     def _shared_step(self, batch):
 
-        full_diffuse_imgs, partial_diffuse_imgs = batch["full_diffuse_img"], batch["partial_diffuse_img"]
+        full_diffuse_imgs, partial_diffuse_imgs, masks = batch["full_diffuse_img"], batch["partial_diffuse_img"], batch["mask"]
         bsz = full_diffuse_imgs.shape[0]
 
         # Noisy latents and timesteps
@@ -76,6 +96,7 @@ class GarmentInpainterModule(pl.LightningModule):
         target = noise
 
         # Conditioning
+        masks = torch.nn.functional.interpolate(masks, scale_factor=1/8)
         text_embeds = self.prompt_embeds.repeat(bsz, 1, 1)
         partial_image_embeds = self.model.encode_partial(partial_diffuse_imgs)
         if self.hparams.model.conditioning_dropout_prob > 0:
@@ -84,7 +105,7 @@ class GarmentInpainterModule(pl.LightningModule):
             )
 
         # Denoising
-        model_pred = self.forward(noisy_latents, timesteps, text_embeds, partial_image_embeds)
+        model_pred = self.forward(noisy_latents, timesteps, text_embeds, partial_image_embeds, masks)
 
         return latents, noisy_latents, timesteps, model_pred, target
 
@@ -123,7 +144,7 @@ class GarmentInpainterModule(pl.LightningModule):
         self.log_dict({f"val/{k}": v for k,v in losses.items() if v is not None}, on_step=False, on_epoch=True, batch_size=bsz)
 
         # Image space metrics
-        reconstructed_imgs = self.inference(batch["partial_diffuse_img"])
+        reconstructed_imgs = self.inference(batch["partial_diffuse_img"], masks=batch["mask"])
         reconstructed_imgs_tensors = torch.stack([pil_to_tensor(img) for img in reconstructed_imgs]).to(self.device)
         target_imgs = denormalise_image_torch(batch["full_diffuse_img"])
         image_metrics = compute_all_metrics(reconstructed_imgs_tensors, target_imgs)
@@ -197,7 +218,7 @@ class GarmentInpainterModule(pl.LightningModule):
         self.val_results = []    
 
     def predict_step(self, batch, batch_idx):
-        reconstructed_imgs = self.inference(batch["partial_diffuse_img"])
+        reconstructed_imgs = self.inference(batch["partial_diffuse_img"], masks=batch["mask"])
         reconstructed_imgs_tensors = torch.stack([pil_to_tensor(img) for img in reconstructed_imgs]).to(self.device)
         target_imgs = denormalise_image_torch(batch["full_diffuse_img"])
         image_metrics = compute_all_metrics(reconstructed_imgs_tensors, target_imgs)
@@ -221,21 +242,33 @@ class GarmentInpainterModule(pl.LightningModule):
 
     def inference(self,
                 partial_diffuse_imgs,
+                masks,
                 num_inference_steps=50,
                 guidance_scale=1.5,
-                image_guidance_scale=5.0):
+                image_guidance_scale=5.0,
+                strength=0.8):
 
         prompts = [self.prompt]*len(partial_diffuse_imgs)
         zero_one_img_tensors = denormalise_image_torch(partial_diffuse_imgs)
         self.inference_pipe.unet = self.model.unet.to(dtype=torch.float32)
         self.inference_pipe.vae = self.model.vae_diffuse.to(dtype=torch.float32)
 
-        preds = self.inference_pipe(
-            prompts,
-            image=zero_one_img_tensors,
-            num_inference_steps=num_inference_steps,
-            image_guidance_scale=image_guidance_scale,
-            guidance_scale=guidance_scale,
-        ).images
+        if self.hparams.model.is_inpainting:
+            preds = self.inference_pipe(
+                prompts,
+                image=zero_one_img_tensors,
+                num_inference_steps=num_inference_steps,
+                mask_image=masks,
+                guidance_scale=guidance_scale, # text guidance scale
+                strength=strength
+            ).images
+        else:
+            preds = self.inference_pipe(
+                prompts,
+                image=zero_one_img_tensors,
+                num_inference_steps=num_inference_steps,
+                image_guidance_scale=image_guidance_scale,
+                guidance_scale=guidance_scale,
+            ).images
 
         return preds
