@@ -1,4 +1,5 @@
 import os
+import sys
 from omegaconf import OmegaConf
 
 def get_correct_config(cfg):
@@ -19,6 +20,9 @@ def get_correct_config(cfg):
 
     if cfg.model.is_inpainting:
         cfg.model.diffusion_path = "sd-legacy/stable-diffusion-inpainting" # "stable-diffusion-v1-5/stable-diffusion-inpainting" 
+
+    # Add launch cmd
+    cfg.launch_cmd = " ".join(sys.argv)
 
     # Print the config
     print("-"*50)

@@ -3,6 +3,7 @@ debug: false
 output_dir: outputs
 checkpoint_dir: /scratch/izar/cizinsky/garment-completion/models/checkpoints
 max_train_samples: 1792000 # 28000*64
+launch_cmd: null # will be set during runtime
 
 logger:
   project: pbr-generation
