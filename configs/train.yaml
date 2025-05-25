@@ -1,7 +1,7 @@
 seed: 42
 debug: false
 output_dir: outputs
-checkpoint_dir: /scratch/izar/cizinsky/garment-completion/checkpoints
+checkpoint_dir: /scratch/izar/cizinsky/garment-completion/models/checkpoints
 max_train_samples: 1792000 # 28000*64
 
 logger:
@@ -19,8 +19,8 @@ data:
     "Lace_Pumpkin_Orange_Brocade",
     "Jacquard_Magenta_Animal_Print_(Leopard)"
   ]
-  pbr_maps_path: "/scratch/izar/cizinsky/garment-completion/pbr_maps/dresscode"
-  mask_path: "/scratch/izar/cizinsky/garment-completion/masks/shirt.png"
+  pbr_maps_path: "/scratch/izar/cizinsky/garment-completion/datasets/pbr_maps/dresscode"
+  mask_path: "/scratch/izar/cizinsky/garment-completion/datasets/masks/shirt.png"
   num_workers: 20
   batch_size: 20 # baseline: 64
   res: 512 # baseline: 512

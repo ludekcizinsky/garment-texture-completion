@@ -13,6 +13,10 @@ train_from_scratch: false
 train_with_lora: false
 use_pretrained_unet: false
 
+# new paths to the datasets and checkpoints
+pbr_maps_path: "/scratch/izar/cizinsky/garment-completion/datasets/pbr_maps/dresscode"
+mask_path: "/scratch/izar/cizinsky/garment-completion/datasets/masks/shirt.png"
+checkpoint_dir: /scratch/izar/cizinsky/garment-completion/models/checkpoints
 
 hydra:
   run:

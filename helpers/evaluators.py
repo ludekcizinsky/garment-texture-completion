@@ -19,7 +19,7 @@ from tqdm import tqdm
 import pandas as pd
 import wandb
 
-CKPT_ROOT = '/scratch/izar/cizinsky/garment-completion/checkpoints'
+CKPT_ROOT = '/scratch/izar/cizinsky/garment-completion/models/checkpoints'
 
 
 def load_checkpoint_and_cfg(run_name: str):
@@ -105,6 +105,11 @@ def run_post_train_evaluation(eval_cfg):
         cfg.model.train_from_scratch = eval_cfg.train_from_scratch
         cfg.model.train_with_lora = eval_cfg.train_with_lora
         cfg.model.use_pretrained_unet = eval_cfg.use_pretrained_unet
+
+        # new paths to the datasets and checkpoints
+        cfg.data.pbr_maps_path = eval_cfg.pbr_maps_path
+        cfg.data.mask_path = eval_cfg.mask_path
+        cfg.checkpoint_dir = eval_cfg.checkpoint_dir
 
         print("FYI: Loading model and data")
         pl.seed_everything(cfg.seed)
