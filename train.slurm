@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=baseline
-#SBATCH --output=/home/cizinsky/garment-texture-completion/outputs/slurm/pbr_train_baseline_output.log
-#SBATCH --error=/home/cizinsky/garment-texture-completion/outputs/slurm/pbr_train_baseline_error.log
+#SBATCH --job-name=part2_gar
+#SBATCH --output=/home/cizinsky/garment-texture-completion/outputs/slurm/%x.%j.out
+#SBATCH --error=/home/cizinsky/garment-texture-completion/outputs/slurm/%x.%j.err
 #SBATCH --time=30:00:00            
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=20           
@@ -12,4 +12,5 @@ source /home/cizinsky/venvs/garment/bin/activate
 
 cd /home/cizinsky/garment-texture-completion
 
-python train.py 
+python train.py model.is_inpainting=True 'logger.tags=[part2, baseline]'
+# python train.py model.is_inpainting=True model.train_with_lora=True 'logger.tags=[part2, lora]'

@@ -1,6 +1,8 @@
 import torch
 from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 from peft import LoraConfig, get_peft_model
+from diffusers.training_utils import cast_training_params
+
 from diffusers import UNet2DConditionModel
 import torch.nn as nn
 
@@ -128,7 +130,10 @@ def init_lora_unet(cfg):
         lora_dropout=0.05,
         bias="none",
     )
-    unet = get_peft_model(unet, lora_unet_cfg)
+    # unet = get_peft_model(unet, lora_unet_cfg)
+    unet.add_adapter(lora_unet_cfg)
+    if cfg.trainer.precision == "16-mixed":
+        cast_training_params(unet, dtype=torch.float32)
 
     return unet
 

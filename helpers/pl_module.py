@@ -246,7 +246,7 @@ class GarmentInpainterModule(pl.LightningModule):
                 num_inference_steps=50,
                 guidance_scale=1.5,
                 image_guidance_scale=5.0,
-                strength=0.8):
+                strength=0.9):
 
         prompts = [self.prompt]*len(partial_diffuse_imgs)
         zero_one_img_tensors = denormalise_image_torch(partial_diffuse_imgs)
@@ -259,7 +259,7 @@ class GarmentInpainterModule(pl.LightningModule):
                 image=zero_one_img_tensors,
                 num_inference_steps=num_inference_steps,
                 mask_image=masks,
-                guidance_scale=guidance_scale, # text guidance scale
+                guidance_scale=7.5, # text guidance scale
                 strength=strength
             ).images
         else:

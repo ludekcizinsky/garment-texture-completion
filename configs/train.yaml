@@ -60,7 +60,6 @@ model:
   conditioning_dropout_prob: 0.05 # classifier-free guidance / baseline: 0.05
 
   # UNet
-  use_finetune_unet: true # default
   train_from_scratch: false
   train_with_lora: false
   use_pretrained_unet: false # only for evaluation
