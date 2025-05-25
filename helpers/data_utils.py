@@ -349,3 +349,47 @@ def pil_to_tensor(pil_img: Image.Image) -> torch.Tensor:
     """
     transform = T.ToTensor()  # Converts to [0, 1] and (C, H, W)
     return transform(pil_img)
+
+def numpy_to_pil(img_array: np.ndarray) -> Image.Image:
+    """
+    Convert a NumPy array to a PIL Image.
+    
+    Parameters:
+        img_array (np.ndarray): Input array of shape (H, W, C) or (H, W)
+            with dtype float32 (values in [0, 1]) or uint8 (values in [0, 255]).
+            
+    Returns:
+        PIL.Image.Image: The corresponding PIL Image.
+    """
+    arr = img_array
+    # If float array, assume values in [0, 1] and scale to [0, 255]
+    if arr.dtype in (np.float32, np.float64):
+        arr = np.clip(arr, 0.0, 1.0)
+        arr = (arr * 255).round().astype(np.uint8)
+    # If not uint8 already, convert
+    elif arr.dtype != np.uint8:
+        arr = arr.astype(np.uint8)
+    return Image.fromarray(arr)
+
+
+def pil_black_to_white_bg(pil_img: Image.Image) -> Image.Image:
+    """
+    Replace pure-black background in an RGB PIL image with white.
+
+    Args:
+        pil_img (PIL.Image.Image): any mode, will be converted to RGB.
+    Returns:
+        PIL.Image.Image: RGB image with black→white.
+    """
+    # Ensure RGB
+    img = pil_img.convert("RGB")
+    arr = np.array(img)
+
+    # Build mask of all-black pixels
+    black_mask = np.all(arr == [0, 0, 0], axis=-1)  # shape H×W, True where R=G=B=0
+
+    # Paint those pixels white
+    arr[black_mask] = [255, 255, 255]
+
+    # Back to PIL
+    return Image.fromarray(arr)
