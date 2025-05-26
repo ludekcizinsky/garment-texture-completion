@@ -13,5 +13,5 @@ source /home/cizinsky/venvs/garment/bin/activate
 cd /home/cizinsky/garment-texture-completion
 
 # Part 2
-python train.py model.is_inpainting=True data.batch_size=16 'logger.tags=[part2, baseline]'
+python train.py model.is_inpainting=True data.batch_size=10 'logger.tags=[part2, baseline]'
 # python train.py model.is_inpainting=True model.train_with_lora=True 'logger.tags=[part2, lora]'
