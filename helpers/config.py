@@ -4,15 +4,15 @@ from omegaconf import OmegaConf
 
 def get_correct_config(cfg):
     # Load the config from the run_id
-    if cfg.logger.run_id:
-        path = os.path.join(cfg.output_dir, "configs", cfg.logger.run_id, "config.yaml")
-        run_id = cfg.logger.run_id
-        max_train_samples = cfg.max_train_samples
-        with open(path, "r") as f:
-            cfg = OmegaConf.load(f)
-        cfg.logger.run_id = run_id
-        cfg.max_train_samples = max_train_samples
-        cfg.trainer.max_steps = -1
+    #    if cfg.logger.run_id:
+        #path = os.path.join(cfg.output_dir, "configs", cfg.logger.run_id, "config.yaml")
+        #run_id = cfg.logger.run_id
+        #max_train_samples = cfg.max_train_samples
+        #with open(path, "r") as f:
+            #cfg = OmegaConf.load(f)
+        #cfg.logger.run_id = run_id
+        #cfg.max_train_samples = max_train_samples
+        #cfg.trainer.max_steps = -1
 
     # Compute dynamically the max_steps as a function of the number of samples and the batch size
     if cfg.trainer.max_steps == -1:

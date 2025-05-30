@@ -48,6 +48,8 @@ class GarmentDenoiser(nn.Module):
         self.noise_scheduler = DDPMScheduler.from_pretrained(
             self.cfg.model.diffusion_path, subfolder="scheduler"
         )
+
+        # Load and freeze the text encoder
         self.tokenizer = CLIPTokenizer.from_pretrained(
             self.cfg.model.diffusion_path, subfolder="tokenizer", 
         )
@@ -59,6 +61,7 @@ class GarmentDenoiser(nn.Module):
         for param in self.text_encoder.parameters():
             param.requires_grad = False
 
+        # Freeze the encoder/decoder 
         # VAE (obtained from DressCode)
         self.vae_diffuse = AutoencoderKL.from_pretrained(
             os.path.join(self.cfg.model.vae_path, "refine_vae"),
@@ -101,16 +104,19 @@ class GarmentDenoiser(nn.Module):
         return text_embeds, partial_image_embeds
 
     def encode_latents(self, full_diffuse_img):
-        # returns z ∼ q(z|x) × scaling_factor
-        latents = self.vae_diffuse.encode(full_diffuse_img.to(self.weight_dtype)).latent_dist.sample()
-        return latents * self.vae_diffuse.config.scaling_factor
+        with torch.no_grad():
+            # returns z ∼ q(z|x) × scaling_factor
+            latents = self.vae_diffuse.encode(full_diffuse_img.to(self.weight_dtype)).latent_dist.sample()
+            return latents * self.vae_diffuse.config.scaling_factor
     
     def decode_latents(self, latents):
-        return self.vae_diffuse.decode(latents / self.vae_diffuse.config.scaling_factor).sample
+        with torch.no_grad():
+            return self.vae_diffuse.decode(latents / self.vae_diffuse.config.scaling_factor).sample
 
     def encode_partial(self, partial_img):
-        # returns the deterministic encoding of the partial image
-        return self.vae_diffuse.encode(partial_img.to(self.weight_dtype)).latent_dist.mode()
+        with torch.no_grad():
+            # returns the deterministic encoding of the partial image
+            return self.vae_diffuse.encode(partial_img.to(self.weight_dtype)).latent_dist.mode()
 
     def denoise_step(self, noisy_latents, timesteps, text_embeds):
         return self.unet(noisy_latents, timesteps, text_embeds).sample

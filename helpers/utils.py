@@ -1,6 +1,6 @@
 import torch
 from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
-from peft import LoraConfig, get_peft_model
+from peft import LoraConfig
 from diffusers.training_utils import cast_training_params
 
 from diffusers import UNet2DConditionModel
@@ -116,6 +116,7 @@ def init_custom_unet(cfg):
 def init_lora_unet(cfg):
     print("--- FYI: Initializing Lora UNet")
 
+    # load and freeze the unet
     unet = UNet2DConditionModel.from_pretrained(
         cfg.model.diffusion_path, subfolder="unet",
     )

@@ -147,6 +147,10 @@ class WarmupPlateauScheduler(Callback):
     def on_train_start(self, trainer, pl_module):
         opt = trainer.optimizers[0]
 
+        for pg in opt.param_groups:
+            if 'initial_lr' not in pg:
+                pg['initial_lr'] = pg['lr']
+
         last_step = trainer.global_step - 1
         warmup_last = min(last_step, self.warmup_steps - 1)
         self.warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
@@ -172,6 +176,9 @@ class WarmupPlateauScheduler(Callback):
 
             if plateau_state:
                 self.plateau_scheduler.load_state_dict(plateau_state)
+
+        print(f"FYI: Warmup scheduler: {self.warmup_scheduler.state_dict()}")
+        print(f"FYI: Plateau scheduler: {self.plateau_scheduler.state_dict()}")
 
 
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):

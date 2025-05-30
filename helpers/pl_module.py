@@ -31,8 +31,6 @@ class GarmentInpainterModule(pl.LightningModule):
 
         self._get_inference_pipe()
 
-
-
     def _get_inference_pipe(self):
         if self.hparams.model.is_inpainting:
             self.inference_pipe = StableDiffusionInpaintPipeline.from_pretrained(
@@ -238,6 +236,10 @@ class GarmentInpainterModule(pl.LightningModule):
     def on_load_checkpoint(self, checkpoint):
         trn_dataset = self.trn_dataloader.dataset
         trn_dataset.load_state_dict(checkpoint['train_dataset_state'])
+
+        if "optimizer_states" in checkpoint:
+            print("------- WARNING: Dropping optimizer states")
+            checkpoint["optimizer_states"] = []
 
 
     def inference(self,
