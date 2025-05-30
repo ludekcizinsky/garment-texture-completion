@@ -29,7 +29,7 @@ data:
 
 # Optimisation
 optim:
-  lr: 1e-4
+  lr: 1e-5
   weight_decay: 1e-2
   warmup_steps: 1000
 
@@ -41,7 +41,7 @@ optim:
   plateau_mode: "min" # mode for plateau scheduler
   plateau_metric: "val/lpips" # metric to monitor for plateau scheduler
   # - cosine
-  use_cosine_scheduler: true # baseline: false
+  use_cosine_scheduler: false # baseline: false
 
   # Gradient clipping
   max_grad_norm: 1.0 # gradient clipping
@@ -49,11 +49,11 @@ optim:
 
   # Loss
   ddim_loss: true # baseline: true
-  ddim_loss_weight: 0.75
+  ddim_loss_weight: 0.5
 
   # EMA
   ema_decay: 0.999
-  use_ema: true # baseline: true
+  use_ema: false # baseline: true
 
 model:
   vae_path: "/home/cizinsky/garment-texture-completion/data_generation/dresscode/material_gen"
