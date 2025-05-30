@@ -17,6 +17,8 @@ cd /home/cizinsky/garment-texture-completion
 # train further
 python train.py optim.lr=1e-4 logger.run_id=6ei613pt 'logger.tags=[part1, lr]'
 
+# lora with proper batch size
+python train.py optim.lr=1e-4 model.train_with_lora=True data.batch_size=45 'logger.tags=[part1, lora]' 
 
 # Part 2
 # python train.py model.is_inpainting=True data.batch_size=10 'logger.tags=[part2, baseline]'

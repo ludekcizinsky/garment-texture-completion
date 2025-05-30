@@ -114,14 +114,18 @@ def init_custom_unet(cfg):
     return unet
 
 def init_lora_unet(cfg):
-    print("--- FYI: Initializing Lora UNet")
+
+    path = "timbrooks/instruct-pix2pix"
+    print(f"--- FYI: Initializing Lora UNet from {path}")
 
     # load and freeze the unet
     unet = UNet2DConditionModel.from_pretrained(
-        cfg.model.diffusion_path, subfolder="unet",
+        path, subfolder="unet",
     )
     for param in unet.parameters():
         param.requires_grad = False
+
+    unet.enable_gradient_checkpointing()
 
     lora_unet_cfg = LoraConfig(
         r=8,
