@@ -6,7 +6,8 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=20           
 #SBATCH --mem=32G                   
-#SBATCH --gres=gpu:1                
+#SBATCH --gres=gpu:1 
+#SBATCH --account=master               
 
 source /home/cizinsky/venvs/garment/bin/activate
 
@@ -19,6 +20,12 @@ python train.py optim.lr=1e-4 logger.run_id=6ei613pt 'logger.tags=[part1, lr]'
 
 # lora with proper batch size
 python train.py optim.lr=1e-4 model.train_with_lora=True data.batch_size=45 'logger.tags=[part1, lora]' 
+
+# can we train on smaller set of training data?
+python train.py optim.lr=1e-4 data.trn_debug_size=5000 'logger.tags=[part1, trn_size]' 
+python train.py optim.lr=1e-4 data.trn_debug_size=10000 'logger.tags=[part1, trn_size]' 
+python train.py optim.lr=1e-4 data.trn_debug_size=15000 'logger.tags=[part1, trn_size]' 
+python train.py optim.lr=1e-4 data.trn_debug_size=20000 'logger.tags=[part1, trn_size]' 
 
 # Part 2
 # python train.py model.is_inpainting=True data.batch_size=10 'logger.tags=[part2, baseline]'
