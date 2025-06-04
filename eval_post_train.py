@@ -1,3 +1,7 @@
+import os
+os.environ["HF_HOME"] = "/scratch/izar/cizinsky/.cache/"
+os.environ["WANDB_CACHE_DIR"] = "/scratch/izar/cizinsky/.cache/wandb"
+
 from helpers.evaluators import run_post_train_evaluation
 import hydra
 from omegaconf import DictConfig, OmegaConf

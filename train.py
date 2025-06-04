@@ -1,5 +1,8 @@
 import os
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+os.environ["HF_HOME"] = "/scratch/izar/cizinsky/.cache/"
+os.environ["WANDB_CACHE_DIR"] = "/scratch/izar/cizinsky/.cache/wandb"
+
 
 import hydra
 from omegaconf import DictConfig
