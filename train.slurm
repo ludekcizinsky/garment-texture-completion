@@ -4,8 +4,8 @@
 #SBATCH --error=/home/cizinsky/garment-texture-completion/outputs/slurm/%x.%j.err
 #SBATCH --time=30:00:00            
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=20           
-#SBATCH --mem=32G                   
+#SBATCH --cpus-per-task=10           
+#SBATCH --mem=16G                   
 #SBATCH --gres=gpu:1 
 #SBATCH --account=master               
 
@@ -19,8 +19,8 @@ cd /home/cizinsky/garment-texture-completion
 #python train.py optim.lr=1e-4 logger.run_id=6ei613pt 'logger.tags=[part1, lr]'
 
 # lora with proper batch size
-#python train.py optim.lr=1e-4 model.train_with_lora=True data.batch_size=45 'logger.tags=[part1, lora]' 
-#python train.py optim.lr=5e-3 model.train_with_lora=True data.batch_size=45 'logger.tags=[part1, lora]' 
+python train.py optim.lr=1e-4 model.train_with_lora=True data.batch_size=40 'logger.tags=[part1, lora]' 
+#python train.py optim.lr=5e-3 model.train_with_lora=True data.batch_size=40 'logger.tags=[part1, lora]' 
 
 # can we train on smaller set of training data?
 #python train.py optim.lr=1e-4 data.trn_debug_size=5000 'logger.tags=[part1, trn_size]' 

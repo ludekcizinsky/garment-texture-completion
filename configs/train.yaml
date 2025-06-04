@@ -23,7 +23,7 @@ data:
   ]
   pbr_maps_path: "/scratch/izar/cizinsky/garment-completion/datasets/pbr_maps/dresscode"
   mask_path: "/scratch/izar/cizinsky/garment-completion/datasets/masks/shirt.png"
-  num_workers: 20
+  num_workers: 10
   batch_size: 20 # baseline: 64
   res: 512 # baseline: 512
 
