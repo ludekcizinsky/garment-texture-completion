@@ -102,9 +102,6 @@ def run_post_train_evaluation(eval_cfg):
         cfg.data.val_debug_size = eval_cfg.val_debug_size
         cfg.data.num_workers = eval_cfg.num_workers
 
-        # print(OmegaConf.to_yaml(cfg))
-
-
         print("FYI: Loading model and data")
         pl.seed_everything(cfg.seed)
         model, val_dataloader = load_model_and_data(cfg, checkpoint)

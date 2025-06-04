@@ -2,7 +2,7 @@
 #SBATCH --job-name=eval_post_train
 #SBATCH --output=/home/cizinsky/garment-texture-completion/outputs/slurm/%x.%j.out
 #SBATCH --error=/home/cizinsky/garment-texture-completion/outputs/slurm/%x.%j.err
-#SBATCH --time=04:00:00            
+#SBATCH --time=01:00:00            
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=10           
 #SBATCH --mem=16G                   
@@ -49,10 +49,14 @@ cd /home/cizinsky/garment-texture-completion
 
 # Train ds scale
 # - 5000
-python eval_post_train.py evaluation.run_name=lunar-night-196 evaluation.run_id=5cvjz9ox 
+# python eval_post_train.py evaluation.run_name=lunar-night-196 evaluation.run_id=5cvjz9ox 
 # - 10000
-python eval_post_train.py evaluation.run_name=azure-energy-197 evaluation.run_id=qf7pnzph 
+# python eval_post_train.py evaluation.run_name=azure-energy-197 evaluation.run_id=qf7pnzph 
 # - 15000
-python eval_post_train.py evaluation.run_name=devoted-glade-198 evaluation.run_id=dhece0q4
+# python eval_post_train.py evaluation.run_name=devoted-glade-198 evaluation.run_id=dhece0q4
 # - 20000
-python eval_post_train.py evaluation.run_name=flowing-pyramid-199 evaluation.run_id=g8kycmqy
+# python eval_post_train.py evaluation.run_name=flowing-pyramid-199 evaluation.run_id=g8kycmqy
+
+# Length of training
+# valiant-resonance-120, before resume: final_eval/lpips=0.50461 final_eval/ssim=0.16205 final_eval/psnr=12.41427
+# python eval_post_train.py evaluation.run_name=valiant-resonance-120 evaluation.run_id=6ei613pt 
