@@ -115,7 +115,10 @@ def init_custom_unet(cfg):
 
 def init_lora_unet(cfg):
 
-    path = "timbrooks/instruct-pix2pix"
+    if cfg.model.is_inpainting:
+        path = "sd-legacy/stable-diffusion-inpainting"
+    else:
+        path = "timbrooks/instruct-pix2pix"
     print(f"--- FYI: Initializing Lora UNet from {path}")
 
     # load and freeze the unet

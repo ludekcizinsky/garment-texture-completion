@@ -99,17 +99,11 @@ def run_post_train_evaluation(eval_cfg):
 
         # Add some additional configs due to (cos lr, lora, from scratch)
         OmegaConf.set_struct(cfg, False)
-        cfg.data.trn_debug_size = eval_cfg.trn_debug_size
         cfg.data.val_debug_size = eval_cfg.val_debug_size
-        cfg.optim.use_cosine_scheduler = eval_cfg.use_cosine_scheduler
-        cfg.model.train_from_scratch = eval_cfg.train_from_scratch
-        cfg.model.train_with_lora = eval_cfg.train_with_lora
-        cfg.model.use_pretrained_unet = eval_cfg.use_pretrained_unet
+        cfg.data.num_workers = eval_cfg.num_workers
 
-        # new paths to the datasets and checkpoints
-        cfg.data.pbr_maps_path = eval_cfg.pbr_maps_path
-        cfg.data.mask_path = eval_cfg.mask_path
-        cfg.checkpoint_dir = eval_cfg.checkpoint_dir
+        # print(OmegaConf.to_yaml(cfg))
+
 
         print("FYI: Loading model and data")
         pl.seed_everything(cfg.seed)

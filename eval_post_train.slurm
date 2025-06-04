@@ -4,8 +4,8 @@
 #SBATCH --error=/home/cizinsky/garment-texture-completion/outputs/slurm/%x.%j.err
 #SBATCH --time=01:00:00            
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=20           
-#SBATCH --mem=32G                   
+#SBATCH --cpus-per-task=10           
+#SBATCH --mem=16G                   
 #SBATCH --gres=gpu:1                
 
 source /home/cizinsky/venvs/garment/bin/activate
@@ -39,4 +39,10 @@ cd /home/cizinsky/garment-texture-completion
 # python eval_post_train.py evaluation.run_name=morning-microwave-118 evaluation.run_id=ha6wswub evaluation.train_with_lora=True
 
 # From pretrained (instruct-pix2pix)
-python eval_post_train.py evaluation.run_name=null evaluation.run_id=null evaluation.use_pretrained_unet=True
+# python eval_post_train.py evaluation.run_name=null evaluation.run_id=null evaluation.use_pretrained_unet=True
+
+# Inpainting
+# - full unet
+python eval_post_train.py evaluation.run_name=honest-sound-182 evaluation.run_id=xwexoq8d 
+# - lora
+python eval_post_train.py evaluation.run_name=woven-gorge-180 evaluation.run_id=uq7v05g2 

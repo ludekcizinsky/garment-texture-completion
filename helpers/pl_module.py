@@ -256,6 +256,7 @@ class GarmentInpainterModule(pl.LightningModule):
         self.inference_pipe.vae = self.model.vae_diffuse.to(dtype=torch.float32)
 
         if self.hparams.model.is_inpainting:
+            print("FYI: running inpainting inference")
             preds = self.inference_pipe(
                 prompts,
                 image=zero_one_img_tensors,
@@ -265,6 +266,7 @@ class GarmentInpainterModule(pl.LightningModule):
                 strength=strength
             ).images
         else:
+            print("FYI: running pix2pix inference")
             preds = self.inference_pipe(
                 prompts,
                 image=zero_one_img_tensors,
