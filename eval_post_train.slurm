@@ -2,7 +2,7 @@
 #SBATCH --job-name=eval_post_train
 #SBATCH --output=/home/cizinsky/garment-texture-completion/outputs/slurm/%x.%j.out
 #SBATCH --error=/home/cizinsky/garment-texture-completion/outputs/slurm/%x.%j.err
-#SBATCH --time=01:00:00            
+#SBATCH --time=04:00:00            
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=10           
 #SBATCH --mem=16G                   
@@ -43,6 +43,16 @@ cd /home/cizinsky/garment-texture-completion
 
 # Inpainting
 # - full unet
-python eval_post_train.py evaluation.run_name=honest-sound-182 evaluation.run_id=xwexoq8d 
+# python eval_post_train.py evaluation.run_name=honest-sound-182 evaluation.run_id=xwexoq8d 
 # - lora
-python eval_post_train.py evaluation.run_name=woven-gorge-180 evaluation.run_id=uq7v05g2 
+# python eval_post_train.py evaluation.run_name=woven-gorge-180 evaluation.run_id=uq7v05g2 
+
+# Train ds scale
+# - 5000
+python eval_post_train.py evaluation.run_name=lunar-night-196 evaluation.run_id=5cvjz9ox 
+# - 10000
+python eval_post_train.py evaluation.run_name=azure-energy-197 evaluation.run_id=qf7pnzph 
+# - 15000
+python eval_post_train.py evaluation.run_name=devoted-glade-198 evaluation.run_id=dhece0q4
+# - 20000
+python eval_post_train.py evaluation.run_name=flowing-pyramid-199 evaluation.run_id=g8kycmqy
