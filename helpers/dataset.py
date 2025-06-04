@@ -43,7 +43,7 @@ def get_dataloaders(cfg):
     val_ds = InpaintingDataset(cfg, selected_indices=val_idx)
     val_loader = torch.utils.data.DataLoader(
         val_ds,
-        batch_size=cfg.data.batch_size,
+        batch_size=20,#cfg.data.batch_size,
         num_workers=cfg.data.num_workers,
         shuffle=False,
     )
