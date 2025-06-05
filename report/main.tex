@@ -60,14 +60,37 @@ Most prior work has concentrated on the geometry, while texture modeling is usua
 
 A further bottleneck in this field is the absence of a large-scale public dataset that pairs garment images with corresponding PBR texture maps. This data gap presents a key obstacle to training more robust and generalisable models for PBR texture extraction from images.
 
-In this work, our aim is to introduce first stepping stone towards the general goal of fully mapping casusally captured
-garments into 3D. Specifically, we focus on the inpainting task of the input diffuse texture. For simplicity, we also disregard logos.
-To this extend, we propose a method, that given partially observed garment, is able to complete it and produce a diffuse UV map.
+In this paper, we take a first step toward scalable, fully-automated garment digitalization by addressing the task of UV-space texture inpainting. Given a partially observed diffuse texture map, our goal is to complete the garment appearance in UV space. For simplicity, we do not address logo modeling in this work.
 
+To inform our method design, we conduct a systematic evaluation of key training and inference choices. We ask: (1) What are the optimal text and image guidance scales during inference? (2) What is the best initialization strategy for fine-tuning? (3) How do training set size and duration affect model performance?
 
-To arrive at this proposed method, we carefully analysed the space of different hyper parameters. To this extend,
-we therefore ask and asnwer the following research questions. First, what is the optimal text and guidance scale
-during inference (short answer is minimum text scale 1.5 and )
+We find that a text guidance scale of 1.5 and image scale of 5.0 yield the best results. Further, initializing from InstructPix2Pix and fine-tuning only LoRA weights leads to superior performance. Surprisingly, we observe that training on only 5k images performs nearly as well as using the full 27k set, although longer training time consistently improves results.
+
+\section{Related Work}
+
+\textbf{General Material Texture Generation.} \textit{TexGen}~\cite{texgen} proposes a generative model for RGB texture synthesis in UV space, 
+conditioned on either image or text inputs, and integrates 3D geometry information into the texture generation pipeline. 
+\textit{Material Palette}~\cite{materialpalette} targets PBR material extraction from single images of 
+real-world surfaces and introduces LoRA-based fine-tuning of diffusion models. 
+\textit{DreamPBR}~\cite{dreampbr} and \textit{DreamMat}~\cite{dreammat} explore high-quality PBR texture generation from text, with the 
+former supporting multi-modal inputs including fabric-related prompts. 
+However, their models are either unpublished or lack garment-specific outputs such as normal maps. 
+\textit{MatFusion}~\cite{matfusion} addresses the removal of baked-in lighting from input images for SVBRDF 
+estimation and serves as a key component in \textit{FabricDiffusion}'s PBR extraction pipeline. Our work draws 
+inspiration from these advances while focusing specifically on recovering garment-specific PBR maps from a single image.
+
+\textbf{Garment Texture Generation.} \textit{FabricDiffusion}~\cite{fabricdiffusion} proposes a two-stage pipeline that first normalizes RGB garment textures 
+and then employs an external model to predict the corresponding PBR texture maps, leveraging prior SVBRDF estimation techniques. 
+\textit{Garment3DGen}~\cite{garment3dgen} introduces a multi-stage framework for 3D garment modeling, combining geometry and texture streams into a 
+renderable output; however, it relies solely on RGB textures. Similarly, \textit{DeepIron}~\cite{deepiron} presents a pipeline involving garment segmentation, 
+texture unwrapping, and inpainting, followed by application of the recovered texture onto a predefined sewing pattern, 
+with its main novelty being the learned unwarping module. Our approach differs in focusing explicitly on recovering garment-specific PBR maps for the 
+entire garment (not just a patch like in \textit{FabricDiffusion}) enabling higher realism and better generalization across lighting conditions.
+
+\textbf{3D Garment Generation.}  
+\textit{DressCode}~\cite{dresscode} introduces a multi-stage framework for text-driven garment synthesis, combining an autoregressive model that generates sewing patterns from prompts with a conditional diffusion model that produces corresponding PBR textures. \textit{WordRobe}~\cite{WordRobe} maps text inputs to textured 3D garments via a disentangled latent garment space and CLIP-based alignment, but produces only RGB textures. \textit{Design2Cloth}~\cite{design2cloth} enables mask-guided 3D garment generation and releases a large dataset of over 2{,}000 real-world garment scans. \textit{PICTURE}~\cite{picture} offers greater design flexibility by disentangling garment style and texture, employing a two-stage pipeline that first predicts garment shape and then generates texture conditioned on that shape. Finally, \textit{VTON360}~\cite{vton360} addresses the challenge of viewpoint consistency in virtual try-on, introducing a method for generating high-fidelity garments renderable from arbitrary angles.  
+All these approaches focus on end-to-end 3D garment generation. In contrast, our method focuses specifically on high-quality \textit{texture reconstruction} from real images, aiming to recover physically meaningful material properties. As such, it can serve as a plug-in module for enhancing the realism and generalizability of generative pipelines that rely on RGB textures or simplified appearance models.
+
 
 \section{Method}
 
