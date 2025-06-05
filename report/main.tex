@@ -1,5 +1,5 @@
 \PassOptionsToPackage{authoryear,round}{natbib}
-\documentclass[11pt]{article}
+\documentclass[11pt,twocolumn]{article}
 \usepackage{report}
 
 \usepackage{hyperref}       % hyperlinks
@@ -12,6 +12,7 @@
 \usepackage{amsmath}
 \usepackage{titling}
 \usepackage{caption}
+\usepackage{subcaption}
 \captionsetup{labelsep=period}
 %\usepackage[font=small]{caption}
 \setlength{\droptitle}{-40pt}  % Adjust as needed
@@ -72,42 +73,99 @@ during inference (short answer is minimum text scale 1.5 and )
 
 \section{Results}
 
-\begin{table}[ht]
+\begin{table*}[t] % top-aligned table
   \centering
-  \begin{tabular}{cccc|ccc}
-  \toprule
-  \textbf{DDIMW} & \textbf{LR} & \textbf{Cosine LR} & \textbf{EMA} & \textbf{LPIPS} & \textbf{SSIM} & \textbf{PSNR} \\
-  \midrule
-  0.50 & 1e-04 & \xmark & \xmark & 0.45 & 0.17 & 13.04 \\
-  0.75 & 1e-05 & \xmark & \xmark & 0.58 & 0.14 & 12.21 \\
-  0.25 & 1e-05 & \xmark & \xmark & 0.63 & 0.12 & 12.08 \\
-  0.50 & 1e-05 & \cmark & \xmark & 0.69 & 0.12 & 10.70 \\
-  0.50 & 1e-05 & \xmark & \xmark & 0.69 & 0.09 & 9.88 \\
-  0.50 & 1e-05 & \xmark & \cmark & 0.70 & 0.12 & 11.40 \\
-  0.00 & 1e-05 & \xmark & \xmark & 0.78 & 0.06 & 10.07 \\
-  0.50 & 3e-06 & \xmark & \xmark & 0.83 & 0.09 & 10.22 \\
-  \bottomrule
-  \end{tabular}
-  \caption{Comparison of hyperparameter configurations and corresponding metrics.}
-  \label{tab:hyperparams}
-  \end{table}
-
-  \begin{table}[ht]
+  \begin{subtable}[t]{0.48\textwidth} % top alignment
+    \vspace{0pt} % ensure top alignment
+    \centering
+    \begin{tabular}{l|ccc}
+    \toprule
+    \textbf{Model} & \textbf{LPIPS} $\downarrow$ & \textbf{SSIM} $\uparrow$ & \textbf{PSNR} $\uparrow$ \\
+    \midrule
+    Ours         & 0.45 & 0.17 & 13.04 \\
+    SD-Inpaint & -    & -    & -     \\
+    Pix2Pix      & 1.00 & 0.03 & 6.36  \\
+    SD           & -    & -    & -     \\
+    \bottomrule
+    \end{tabular}
+    \subcaption{Comparison to non-finetuned baselines.}
+    \label{tab:best-vs-baseline}
+  \end{subtable}
+  \hfill
+  \begin{subtable}[t]{0.48\textwidth} % top alignment
+    \vspace{0pt} % ensure top alignment
     \centering
     \begin{tabular}{cc|ccc}
     \toprule
-    \textbf{Train Size} & \textbf{Train Time [hrs]} & \textbf{lpips} & \textbf{ssim} & \textbf{psnr} \\
+    \textbf{TNS} & \textbf{TT [hrs]} & \textbf{LPIPS} $\downarrow$ & \textbf{SSIM} $\uparrow$ & \textbf{PSNR} $\uparrow$ \\
     \midrule
-    27000 & 60 & 0.45 & 0.17 & 13.04 \\
-    5000 & 30 & 0.49 & 0.17 & 13.11 \\
-    15000 & 30 & 0.50 & 0.16 & 13.10 \\
-    20000 & 30 & 0.51 & 0.17 & 13.12 \\
-    10000 & 30 & 0.52 & 0.17 & 12.65 \\
+    27,000 & 60 & 0.45 & 0.17 & 13.04 \\
+    5,000 & 30 & 0.49 & 0.17 & 13.11 \\
+    15,000 & 30 & 0.50 & 0.16 & 13.10 \\
+    20,000 & 30 & 0.51 & 0.17 & 13.12 \\
+    10,000 & 30 & 0.52 & 0.17 & 12.65 \\
     \bottomrule
     \end{tabular}
-    \caption{Effect of training set size and training time on model performance.}
+    \subcaption{Effect of training set size and time on performance.}
     \label{tab:scale-study}
-    \end{table}
+  \end{subtable}
+  \caption{Comparison of our best model against non-finetuned baselines and ablation study on effect of time and training set size scale.}
+  \label{tab:base-and-scale}
+\end{table*}
+
+
+\begin{table*}[t]
+  \centering
+
+  \begin{subtable}[t]{\textwidth}
+    \centering
+    \vspace{0pt}
+    \begin{tabular}{cccc|ccc}
+    \toprule
+    \textbf{DDIM Weight} & \textbf{LR} & \textbf{Cosine Scheduler LR} & \textbf{EMA} & \textbf{LPIPS} $\downarrow$ & \textbf{SSIM} $\uparrow$ & \textbf{PSNR} $\uparrow$ \\
+    \midrule
+    0.50 & 1e-04 & \xmark & \xmark & 0.45 & 0.17 & 13.04 \\
+    0.75 & 1e-05 & \xmark & \xmark & 0.58 & 0.14 & 12.21 \\
+    0.25 & 1e-05 & \xmark & \xmark & 0.63 & 0.12 & 12.08 \\
+    0.50 & 1e-05 & \cmark & \xmark & 0.69 & 0.12 & 10.70 \\
+    0.50 & 1e-05 & \xmark & \xmark & 0.69 & 0.09 & 9.88 \\
+    0.50 & 1e-05 & \xmark & \cmark & 0.70 & 0.12 & 11.40 \\
+    0.00 & 1e-05 & \xmark & \xmark & 0.78 & 0.06 & 10.07 \\
+    0.50 & 3e-06 & \xmark & \xmark & 0.83 & 0.09 & 10.22 \\
+    \bottomrule
+    \end{tabular}
+    \subcaption{Comparison of hyperparameter configurations and corresponding metrics.}
+    \label{tab:hyperparams}
+  \end{subtable}
+
+  \vspace{1em} % spacing between the tables
+
+  \begin{subtable}[t]{\textwidth}
+    \centering
+    \vspace{0pt}
+    \begin{tabular}{ccccccc|ccc}
+    \toprule
+    \textbf{DDIM Weight} & \textbf{LR} & \textbf{BSZ} & \textbf{LoRA} & \textbf{Scratch} & \textbf{Inpaint} & \textbf{Base Model} & \textbf{LPIPS} $\downarrow$ & \textbf{SSIM} $\uparrow$ & \textbf{PSNR} $\uparrow$ \\
+    \midrule
+    0.50 & 1e-04 & 20 & \cmark & \xmark & \xmark & pix2pix & 0.61 & 0.12 & 12.15 \\
+    0.50 & 1e-05 & 20 & \cmark & \xmark & \xmark & pix2pix & 0.76 & 0.10 & 10.62 \\
+    0.50 & 1e-05 & 20 & \xmark & \cmark & \xmark & sd & 0.82 & 0.02 & 7.48 \\
+    0.75 & 1e-04 & 10 & \xmark & \xmark & \cmark & sd-inpaint & 0.86 & 0.05 & 7.11 \\
+    0.75 & 1e-04 & 20 & \cmark & \xmark & \cmark & sd-inpaint & 0.96 & 0.13 & 9.25 \\
+    0.50 & 5e-03 & 40 & \cmark & \xmark & \xmark & pix2pix & - & - & - \\
+    0.50 & 1e-04 & 40 & \cmark & \xmark & \xmark & pix2pix & - & - & - \\
+    \bottomrule
+    \end{tabular}
+    \subcaption{Ablation study over model architecture and training strategy.}
+    \label{tab:arch-ablation}
+  \end{subtable}
+
+  \caption{Effect of hyperparameters and architectural choices on model performance.}
+  \label{tab:combined-hparams-arch}
+\end{table*}
+
+
+
 
 \newpage
 \bibliographystyle{plainnat}

@@ -1,9 +1,7 @@
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{report}[2025/05/18 Report Style]
 
-% Always use 11pt
-\DeclareOption*{\PassOptionsToClass{\CurrentOption}{article}}
-\ProcessOptions\relax
+% Load article class directly with desired options
 
 % Font and spacing
 \usepackage{fontspec}
@@ -15,7 +13,7 @@
 \usepackage[numbers]{natbib}     % References
 \usepackage{enumitem}            % Compact lists
 
-% Margin setup: modest but readable
+% Margins
 \geometry{
   top=0.75in,
   bottom=0.75in,
@@ -23,20 +21,29 @@
   right=1.0in
 }
 
-% Section spacing (slightly compact)
+% Column spacing
+\setlength{\columnsep}{20pt}
+
+% Table spacing
+\setlength{\tabcolsep}{4pt}  % tighter columns
+
+% Section spacing (compact)
 \usepackage[compact]{titlesec}
 \titlespacing{\section}{0pt}{*2}{*1}
 \titlespacing{\subsection}{0pt}{*1.5}{*0.8}
 
-% Paragraphs: no indent, small vertical space
+% Paragraphs: no indent, small space between
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{6pt plus 1pt}
 
-% Line spacing: normal
+% Line spacing
 \renewcommand{\baselinestretch}{1.0}
 
 % Figure spacing
 \setlength{\abovecaptionskip}{6pt}
 \setlength{\belowcaptionskip}{0pt}
+
+% Optional: balance columns on final page
+\usepackage{balance}
 
 \pagenumbering{gobble}
