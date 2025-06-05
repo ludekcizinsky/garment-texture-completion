@@ -16,6 +16,12 @@
 %\usepackage[font=small]{caption}
 \setlength{\droptitle}{-40pt}  % Adjust as needed
 
+
+\usepackage{amssymb}
+\usepackage{pifont}
+\newcommand{\cmark}{\checkmark}
+\newcommand{\xmark}{\ding{55}}
+
 \usepackage{titlesec}
 
 \titlespacing{\section}
@@ -28,12 +34,12 @@
   {1.2ex plus 0.3ex minus .2ex}
   {0.6ex plus .1ex}
 
-\title{\vspace{-1em}{\Large\textbf{Hyper-Network Generating Neural Cellular Automata for Texture Synthesis}}\vspace{-1em}}
+\title{\vspace{-1em}{\Large\textbf{Garment Texture Completion in UV space using Diffusion}}\vspace{-1em}}
 
 \author{
   \begin{tabular}{c c}
-  Ludek Cizinsky\thanks{Conducted as part of a 12 ECTS EPFL research project, with Ehsan supervising. Contributed the literature review, autoencoder, training pipeline refactor to enable easier experimentations and more fine grained evaluation, architecture hyper-parameter search and conditioning ablation as well as the figure design.} & Ehsan Pajouheshgar \\
-  \texttt{ludek.cizinsky@epfl.ch} & \texttt{ehsan.pajourheshgar@epfl.ch} \\
+  Ludek Cizinsky & Yingxuan You\thanks{Yingxuan provided the initial idea, and model pipeline based on her previous work. She then provided Ludek with the helpful feedback throughout the semester.}  \\
+  \texttt{ludek.cizinsky@epfl.ch} & \texttt{yingxuan.you@epfl.ch} \\
   EPFL & EPFL
   \end{tabular}
 }
@@ -43,8 +49,67 @@
 \date{}
 \maketitle
 
+\section{Introduction}\label{sec:intro}
+
+There is an increasing interest in digitalising garments, that is, converting an image of a person wearing clothing into a 3D model of the depicted garments. In this work, we focus specifically on extracting high-quality physically based rendering (PBR) texture maps, while relying on a pre-trained Human Vision Model to handle the geometry. PBR texture maps are essential for realistic rendering of garment appearance and are thus of particular importance for downstream applications in gaming and the film industry. However, most existing methods extract only RGB texture maps, which include baked-in lighting from the original environment, limiting their adaptability and usefulness for other scenes or renderers.
+
+Extracting high-quality PBR texture maps from a single RGB image poses several challenges. First, the problem involves modeling both the geometry and the appearance of the garment. Input images typically vary in lighting conditions and camera positions, making it difficult to disentangle material properties from illumination. In addition, garments themselves introduce domain-specific complications: self-occlusions often obscure parts of the fabric, which hinders accurate pattern capture; logos may be difficult to isolate and are frequently overlaid on the fabric in ways that complicate extraction; and finally, garment textures exhibit significant variation, ranging from simple, repetitive motifs to complex, irregular patterns.
+
+Most prior work has concentrated on the geometry, while texture modeling is usually simplified to generating RGB texture maps, as seen in methods such as \textit{Garment3DGen} \cite{garment3dgen}, \textit{DeepIron} \cite{deepiron}, or \textit{Wordrobe} \cite{WordRobe}. To the best of our knowledge, \textit{Fabric Diffusion} (FBD) \cite{fabricdiffusion} is the only method that directly attempts to generate PBR texture maps from a single image. However, this approach comes with limitations. FBD relies on a user-provided patch of the garment to model local texture patterns, assuming these can be seamlessly tiled to cover the surface. This assumption fails when patterns are not globally repetitive, and it may produce unnatural seams between tiles. Additionally, logo extraction in FBD requires the user to manually crop the logo, after which the model removes background and lighting artifacts. While effective in isolated cases, this process is impractical for full-garment digitalisation and does not generalise well to garments with multiple logos.
+
+A further bottleneck in this field is the absence of a large-scale public dataset that pairs garment images with corresponding PBR texture maps. This data gap presents a key obstacle to training more robust and generalisable models for PBR texture extraction from images.
+
+In this work, our aim is to introduce first stepping stone towards the general goal of fully mapping casusally captured
+garments into 3D. Specifically, we focus on the inpainting task of the input diffuse texture. For simplicity, we also disregard logos.
+To this extend, we propose a method, that given partially observed garment, is able to complete it and produce a diffuse UV map.
 
 
+To arrive at this proposed method, we carefully analysed the space of different hyper parameters. To this extend,
+we therefore ask and asnwer the following research questions. First, what is the optimal text and guidance scale
+during inference (short answer is minimum text scale 1.5 and )
+
+\section{Method}
+
+\section{Results}
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{cccc|ccc}
+  \toprule
+  \textbf{DDIMW} & \textbf{LR} & \textbf{Cosine LR} & \textbf{EMA} & \textbf{LPIPS} & \textbf{SSIM} & \textbf{PSNR} \\
+  \midrule
+  0.50 & 1e-04 & \xmark & \xmark & 0.45 & 0.17 & 13.04 \\
+  0.75 & 1e-05 & \xmark & \xmark & 0.58 & 0.14 & 12.21 \\
+  0.25 & 1e-05 & \xmark & \xmark & 0.63 & 0.12 & 12.08 \\
+  0.50 & 1e-05 & \cmark & \xmark & 0.69 & 0.12 & 10.70 \\
+  0.50 & 1e-05 & \xmark & \xmark & 0.69 & 0.09 & 9.88 \\
+  0.50 & 1e-05 & \xmark & \cmark & 0.70 & 0.12 & 11.40 \\
+  0.00 & 1e-05 & \xmark & \xmark & 0.78 & 0.06 & 10.07 \\
+  0.50 & 3e-06 & \xmark & \xmark & 0.83 & 0.09 & 10.22 \\
+  \bottomrule
+  \end{tabular}
+  \caption{Comparison of hyperparameter configurations and corresponding metrics.}
+  \label{tab:hyperparams}
+  \end{table}
+
+  \begin{table}[ht]
+    \centering
+    \begin{tabular}{cc|ccc}
+    \toprule
+    \textbf{Train Size} & \textbf{Train Time [hrs]} & \textbf{lpips} & \textbf{ssim} & \textbf{psnr} \\
+    \midrule
+    27000 & 60 & 0.45 & 0.17 & 13.04 \\
+    5000 & 30 & 0.49 & 0.17 & 13.11 \\
+    15000 & 30 & 0.50 & 0.16 & 13.10 \\
+    20000 & 30 & 0.51 & 0.17 & 13.12 \\
+    10000 & 30 & 0.52 & 0.17 & 12.65 \\
+    \bottomrule
+    \end{tabular}
+    \caption{Effect of training set size and training time on model performance.}
+    \label{tab:scale-study}
+    \end{table}
+
+\newpage
 \bibliographystyle{plainnat}
 \bibliography{references}
 
