@@ -1,0 +1,61 @@
+seed: 42
+debug: false
+output_dir: outputs
+checkpoint_dir: /scratch/izar/cizinsky/garment-completion/models/checkpoints
+max_train_samples: 1792000
+launch_cmd: train.py model.is_inpainting=True model.train_with_lora=True logger.tags=[part2,
+  lora]
+logger:
+  project: pbr-generation
+  tags:
+  - part2
+  - lora
+  run_id: null
+data:
+  val_size: 300
+  trn_debug_size: -1
+  val_debug_size: -1
+  val_sel_texture_names:
+  - Denim_Magenta_Floral_Print
+  - Herringbone_Lime_Green_Animal_Print_(Leopard)
+  - Georgette_Emerald_Green_Checks
+  - Lace_Pumpkin_Orange_Brocade
+  - Jacquard_Magenta_Animal_Print_(Leopard)
+  pbr_maps_path: /scratch/izar/cizinsky/garment-completion/datasets/pbr_maps/dresscode
+  mask_path: /scratch/izar/cizinsky/garment-completion/datasets/masks/shirt.png
+  num_workers: 20
+  batch_size: 20
+  res: 512
+optim:
+  lr: 0.0001
+  weight_decay: 0.01
+  warmup_steps: 1000
+  plateau_patience: 7
+  plateau_factor: 0.5
+  min_lr: 1.0e-06
+  plateau_mode: min
+  plateau_metric: val/lpips
+  use_cosine_scheduler: true
+  max_grad_norm: 1.0
+  grad_norm_type: 2.0
+  ddim_loss: true
+  ddim_loss_weight: 0.75
+  ema_decay: 0.999
+  use_ema: true
+model:
+  vae_path: /home/cizinsky/garment-texture-completion/data_generation/dresscode/material_gen
+  diffusion_path: sd-legacy/stable-diffusion-inpainting
+  conditioning_dropout_prob: 0.05
+  train_from_scratch: false
+  train_with_lora: true
+  use_pretrained_unet: false
+  is_inpainting: true
+trainer:
+  max_steps: 89600
+  accelerator: gpu
+  devices: 1
+  checkpoints_total_limit: 2
+  checkpoint_every_n_train_steps: 5000
+  val_check_interval: 1000
+  precision: 16-mixed
+  log_every_n_steps: 10
