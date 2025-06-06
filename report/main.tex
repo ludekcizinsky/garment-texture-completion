@@ -94,6 +94,55 @@ All these approaches focus on end-to-end 3D garment generation. In contrast, our
 
 \section{Method}
 
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/pbr_train_overview.png}
+  \caption{Overview of the training pipeline.}
+  \label{fig:trn-overview}
+\end{figure*}
+
+We make use of a pre-trained VAE \cite{vae} encoder-decoder pair $(\mathcal{E}, \mathcal{D})$ for diffuse textures, where $\mathcal{E}: \mathbb{R}^{H \times W \times 3} \rightarrow \mathbb{R}^{C \times H' \times W'}$ encodes RGB images into a latent space, and $\mathcal{D}$ maps latents back to image space. The decoder was specifically fine-tuned for the task of reconstructing diffuse textures \cite{dresscode}.
+
+Figure \ref{fig:trn-overview} shows an overview of our fine tuning pipeline. Given an input diffuse texture $\mathbf{x}_0$ and a binary mask $\mathbf{m}$, we encode the full and masked textures using the VAE encoder:
+$$
+\mathbf{z}_0 = \mathcal{E}(\mathbf{x}_0), \quad \mathbf{z}_m = \mathcal{E}(\mathbf{x}_0 \odot \mathbf{m}),
+$$
+
+where $\odot$ denotes element-wise multiplication. We then sample a timestep $t \sim \mathcal{U}(1, T)$, using PNDM scheduler \cite{pndm}, and generate a noisy latent:
+\vspace{0.0em}
+$$
+\mathbf{z}_t = \sqrt{\bar{\alpha}_t} \mathbf{z}_0 + \sqrt{1 - \bar{\alpha}_t} \boldsymbol{\epsilon}, \quad \boldsymbol{\epsilon} \sim \mathcal{N}(0, \mathbf{I}),
+$$
+
+where $\bar{\alpha}_t$ is the cumulative product of noise schedule coefficients. A conditioning text prompt $\mathbf{c}$ (constant across all samples) is embedded using CLIP \cite{clip}. To enable classifier-free guidance \cite{cfg}, we randomly drop the conditioning with some probability $p_{\text{drop}}$.
+
+The model $\boldsymbol{\epsilon}_\theta$ is trained to predict the noise $\boldsymbol{\epsilon}$ added to $\mathbf{z}_0$. The total loss is then a weighted sum of the denoising objective and a DDIM reconstruction loss:
+$$
+\mathcal{L} = \|\boldsymbol{\epsilon} - \boldsymbol{\epsilon}_\theta(\mathbf{z}_t, t, \mathbf{c})\|_2^2 + \lambda_{\text{DDIM}} \cdot \mathcal{L}_{\text{DDIM}}(\mathbf{z}_0, \hat{\mathbf{z}}_0),
+$$
+
+where $\hat{\mathbf{z}}_0$ is the model's reconstruction using DDIM inversion \cite{ddim} and $\lambda_{\text{DDIM}}$ is the weight of DDIM loss.
+
+During inference, we adopt the same approach as in \textit{InstructPix2Pix} \cite{instructpix2pix}, 
+where we condition the diffusion model on latents of the masked texture $\mathbf{z}_m$ and text prompt 
+$\mathbf{z_c}$ to iteratively denoise from the noisy input image $\mathbf{z}_T$ to $\hat{\mathbf{z}}_0$. 
+Importantly, we make use of classifier-free guidance \cite{cfg} to enable control over the text prompt and 
+image guidance influence on the final texture. Based on our experiments, we find the text guidance scale $w_T = 1.5$ 
+and image guidance scale $w_I = 5.0$ to be optimal.
+\vspace{0.0em}
+\begin{align*}
+  \tilde{\boldsymbol{\epsilon}}_{\theta}(\mathbf{z}_t, &\mathbf{c}_I, \mathbf{c}_T) = \boldsymbol{\epsilon}_{\theta}(\mathbf{z}_t, \varnothing, \varnothing) \\
+  &\quad + w_I \cdot \left( \boldsymbol{\epsilon}_{\theta}(\mathbf{z}_t, \mathbf{c}_I, \varnothing) - \boldsymbol{\epsilon}_{\theta}(\mathbf{z}_t, \varnothing, \varnothing) \right) \\
+  &\quad + w_T \cdot \left( \boldsymbol{\epsilon}_{\theta}(\mathbf{z}_t, \mathbf{c}_I, \mathbf{c}_T) - \boldsymbol{\epsilon}_{\theta}(\mathbf{z}_t, \mathbf{c}_I, \varnothing) \right)
+\end{align*}
+
+% SD v1.5 (img2img)
+% SSIM: 0.02430877275764942, PSNR: 6.464392185211182, LPIPS: 0.9525905251502991
+
+% SD v1.5 inpaint (inpatient)
+% SSIM: 0.020838197320699692, PSNR: 6.564342498779297, LPIPS: 0.9757870435714722
+
+
 \section{Results}
 
 \begin{table*}[t] % top-aligned table
@@ -106,9 +155,9 @@ All these approaches focus on end-to-end 3D garment generation. In contrast, our
     \textbf{Model} & \textbf{LPIPS} $\downarrow$ & \textbf{SSIM} $\uparrow$ & \textbf{PSNR} $\uparrow$ \\
     \midrule
     Ours         & 0.45 & 0.17 & 13.04 \\
-    SD-Inpaint & -    & -    & -     \\
+    SD-Inpaint & 0.97 & 0.02 & 6.56 \\
     Pix2Pix      & 1.00 & 0.03 & 6.36  \\
-    SD           & -    & -    & -     \\
+    SD  & 0.95 & 0.02 & 6.46 \\
     \bottomrule
     \end{tabular}
     \subcaption{Comparison to non-finetuned baselines.}
