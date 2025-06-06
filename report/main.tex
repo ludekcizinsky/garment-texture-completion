@@ -31,7 +31,7 @@
 
 \author{
   \begin{tabular}{c c}
-  Ludek Cizinsky & Yingxuan You\thanks{Yingxuan provided the initial idea, and model pipeline based on her previous work. She then provided Ludek with the helpful feedback throughout the semester.}  \\
+  Ludek Cizinsky & Yingxuan You\thanks{Yingxuan provided the initial idea, and model pipeline based on her previous work. She then provided Ludek with helpful feedback and guidance throughout the semester.}  \\
   \texttt{ludek.cizinsky@epfl.ch} & \texttt{yingxuan.you@epfl.ch} \\
   EPFL & EPFL
   \end{tabular}
@@ -50,25 +50,65 @@
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.45\textwidth]{figures/pbr_examples.png}
+  \includegraphics[width=0.47\textwidth]{figures/pbr_examples.png}
   \caption{Example of diffuse texture predictions. The model predicts the diffuse texture based 
   on the observed partial masked image.}
   \label{fig:examples}
 \end{figure}
 
-There is an increasing interest in digitalising garments, that is, converting an image of a person wearing clothing into a 3D model of the depicted garments. In this work, we focus specifically on extracting high-quality physically based rendering (PBR) texture maps, while relying on a pre-trained Human Vision Model to handle the geometry. PBR texture maps are essential for realistic rendering of garment appearance and are thus of particular importance for downstream applications in gaming and the film industry. However, most existing methods extract only RGB texture maps, which include baked-in lighting from the original environment, limiting their adaptability and usefulness for other scenes or renderers.
+There is an increasing interest in digitalising garments, that is, converting an image of a person wearing clothing into a 3D model 
+of the depicted garments. In this work, we focus specifically on extracting high-quality physically based rendering (PBR) texture maps, 
+while relying on a pre-trained Human Vision Model to handle the geometry. 
+PBR texture maps are essential for realistic rendering of garment appearance and are thus of particular importance for downstream applications 
+in gaming and the film industry. However, most existing methods extract only RGB texture maps, 
+which include baked-in lighting from the original environment, limiting their adaptability and usefulness for other 
+scenes or renderers.
 
-Extracting high-quality PBR texture maps from a single RGB image poses several challenges. First, the problem involves modeling both the geometry and the appearance of the garment. Input images typically vary in lighting conditions and camera positions, making it difficult to disentangle material properties from illumination. In addition, garments themselves introduce domain-specific complications: self-occlusions often obscure parts of the fabric, which hinders accurate pattern capture; logos may be difficult to isolate and are frequently overlaid on the fabric in ways that complicate extraction; and finally, garment textures exhibit significant variation, ranging from simple, repetitive motifs to complex, irregular patterns.
+Extracting high-quality PBR texture maps from a single RGB image poses several challenges. 
+First, the problem involves modeling both the geometry and the appearance of the garment. 
+Input images typically vary in lighting conditions and camera positions, making it difficult to disentangle material 
+properties from illumination. In addition, garments themselves introduce domain-specific complications: 
+self-occlusions often obscure parts of the fabric, which hinders accurate pattern capture; 
+logos may be difficult to isolate and are frequently overlaid on the fabric in ways that complicate extraction; 
+and finally, garment textures exhibit significant variation, ranging from simple, repetitive motifs to complex, 
+irregular patterns.
 
-Most prior work has concentrated on the geometry, while texture modeling is usually simplified to generating RGB texture maps, as seen in methods such as \textit{Garment3DGen} \cite{garment3dgen}, \textit{DeepIron} \cite{deepiron}, or \textit{Wordrobe} \cite{WordRobe}. To the best of our knowledge, \textit{Fabric Diffusion} (FBD) \cite{fabricdiffusion} is the only method that directly attempts to generate PBR texture maps from a single image. However, this approach comes with limitations. FBD relies on a user-provided patch of the garment to model local texture patterns, assuming these can be seamlessly tiled to cover the surface. This assumption fails when patterns are not globally repetitive, and it may produce unnatural seams between tiles. Additionally, logo extraction in FBD requires the user to manually crop the logo, after which the model removes background and lighting artifacts. While effective in isolated cases, this process is impractical for full-garment digitalisation and does not generalise well to garments with multiple logos.
+Most prior work has concentrated on the geometry, while texture modeling is usually simplified to generating \textit{RGB} 
+texture maps, as seen in methods such as \textit{Garment3DGen} \cite{garment3dgen}, \textit{DeepIron} \cite{deepiron}, 
+or \textit{Wordrobe} \cite{WordRobe}. To the best of our knowledge, \textit{Fabric Diffusion} (FBD) \cite{fabricdiffusion} is 
+the only method that directly attempts to generate PBR texture maps from a single image. 
+However, this approach comes with limitations. FBD relies on a user-provided patch of the garment to model local 
+texture patterns, assuming these can be seamlessly tiled to cover the surface. This assumption fails when patterns are not 
+globally repetitive, and it may produce unnatural seams between tiles. 
+Additionally, logo extraction in FBD requires the user to manually crop the logo, 
+after which the model removes background and lighting artifacts. 
+While effective in isolated cases, this process is impractical for full-garment digitalisation and does not 
+generalise well to garments with multiple logos.
 
-A further bottleneck in this field is the absence of a large-scale public dataset that pairs garment images with corresponding PBR texture maps. This data gap presents a key obstacle to training more robust and generalisable models for PBR texture extraction from images.
+A further bottleneck in this field is the absence of a large-scale public dataset that pairs 
+garment images with corresponding PBR texture maps. This data gap presents a key obstacle to 
+training more robust and generalisable models for PBR texture extraction from images.
 
-In this paper, we take a first step toward scalable, fully-automated garment digitalization by addressing the task of UV-space texture inpainting. Given a partially observed diffuse texture map, our goal is to complete the garment appearance in UV space. For simplicity, we do not address logo modeling in this work.
+In this work, we take a first step toward scalable, fully-automated garment digitalization by addressing the 
+task of UV-space texture inpainting. Given a partially observed diffuse texture map, our goal is to complete 
+the garment appearance in UV space. For simplicity, we do not address logo modeling.
 
-To inform our method design, we conduct a systematic evaluation of key training and inference choices. We ask: (1) What are the optimal text and image guidance scales during inference? (2) What is the best initialization strategy for fine-tuning? (3) How do training set size and duration affect model performance?
+To inform our method design, we conduct a systematic evaluation of key training and inference choices. 
+We ask: (1) What are the optimal text and image guidance scales during inference? (2) What is the best initialization strategy for fine-tuning? (3) 
+How do training set size and duration affect model performance?
 
-We find that a text guidance scale of 1.5 and image scale of 5.0 yield the best results. Further, initializing from InstructPix2Pix and fine-tuning only LoRA weights leads to superior performance. Surprisingly, we observe that training on only 5k images performs nearly as well as using the full 27k set, although longer training time consistently improves results.
+We find that a text guidance scale of 1.5 and image scale of 5.0 yield the best results. 
+Further, initializing from InstructPix2Pix and fine tuning the full model leads to the best performance. 
+Surprisingly, we observe that training on only 5k images performs nearly as well as using the full 27k set, 
+although longer training time consistently improves results.
+
+We summarise our contributions as follows:
+\begin{itemize}[itemsep=2pt, topsep=2pt]
+  \item We introduce a new dataset of 27{,}000 PBR texture maps generated by a pre-trained DressCode \cite{dresscode} model.
+  \item We propose a new method for UV-space texture inpainting that is trained on the proposed dataset.
+  \item We conduct a systematic evaluation of key training and inference choices.
+  \item We show that our method achieves the best performance on all metrics compare to the existing state-of-the-art inpainting methods.
+\end{itemize}
 
 \section{Related Work}
 
