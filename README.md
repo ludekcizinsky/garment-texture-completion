@@ -41,3 +41,11 @@ You can evaluate the model using the following command:
 ```bash
 python eval_post_train.py
 ```
+
+## Data Generation
+
+To generate the data, you can use the following command:
+
+```bash
+python pbr_gen.py
+```
