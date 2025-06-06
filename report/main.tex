@@ -25,15 +25,7 @@
 
 \usepackage{titlesec}
 
-\titlespacing{\section}
-  {0pt}    % left margin
-  {0.7ex plus 0.5ex minus .2ex}  % space before section title
-  {0.7ex plus .2ex}  % space after section title (before paragraph)
 
-\titlespacing{\subsection}
-  {0pt}
-  {1.2ex plus 0.3ex minus .2ex}
-  {0.6ex plus .1ex}
 
 \title{\vspace{-1em}{\Large\textbf{Garment Texture Completion in UV space using Diffusion}}\vspace{-1em}}
 
@@ -45,12 +37,24 @@
   \end{tabular}
 }
 
+
 \begin{document}
 
 \date{}
 \maketitle
 
+
+
+
 \section{Introduction}\label{sec:intro}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.45\textwidth]{figures/pbr_examples.png}
+  \caption{Example of diffuse texture predictions. The model predicts the diffuse texture based 
+  on the observed partial masked image.}
+  \label{fig:examples}
+\end{figure}
 
 There is an increasing interest in digitalising garments, that is, converting an image of a person wearing clothing into a 3D model of the depicted garments. In this work, we focus specifically on extracting high-quality physically based rendering (PBR) texture maps, while relying on a pre-trained Human Vision Model to handle the geometry. PBR texture maps are essential for realistic rendering of garment appearance and are thus of particular importance for downstream applications in gaming and the film industry. However, most existing methods extract only RGB texture maps, which include baked-in lighting from the original environment, limiting their adaptability and usefulness for other scenes or renderers.
 
@@ -94,9 +98,9 @@ All these approaches focus on end-to-end 3D garment generation. In contrast, our
 
 \section{Method}
 
-\begin{figure*}[!t]
+\begin{figure*}[t]
   \centering
-  \includegraphics[width=0.8\textwidth]{figures/pbr_train_overview.png}
+  \includegraphics[width=1.0\textwidth]{figures/pbr_train_overview.png}
   \caption{Overview of the training pipeline.}
   \label{fig:trn-overview}
 \end{figure*}
@@ -136,104 +140,165 @@ and image guidance scale $w_I = 5.0$ to be optimal.
   &\quad + w_T \cdot \left( \boldsymbol{\epsilon}_{\theta}(\mathbf{z}_t, \mathbf{c}_I, \mathbf{c}_T) - \boldsymbol{\epsilon}_{\theta}(\mathbf{z}_t, \mathbf{c}_I, \varnothing) \right)
 \end{align*}
 
+\textbf{Data.} We generate a dataset of 27{,}000 PBR texture maps using pretrained DressCode \cite{dresscode} model. Specifically,
+we first generate 30 different queries for colour, texture and pattern. We then feed each possible combination of these
+queries to the DressCode model which then generates a corresponding PBR texture map.
+
 % SD v1.5 (img2img)
 % SSIM: 0.02430877275764942, PSNR: 6.464392185211182, LPIPS: 0.9525905251502991
 
 % SD v1.5 inpaint (inpatient)
 % SSIM: 0.020838197320699692, PSNR: 6.564342498779297, LPIPS: 0.9757870435714722
 
+% kandinsky
+% SSIM: 0.09910932183265686, PSNR: 9.545990943908691, LPIPS: 0.9103674292564392
+
+
+
+
+% # valiant-resonance-120, before resume: final_eval/lpips=0.50461 final_eval/ssim=0.16205 final_eval/psnr=12.41427
 
 \section{Results}
 
-\begin{table*}[t] % top-aligned table
+\begin{table*}[t]
   \centering
-  \begin{subtable}[t]{0.48\textwidth} % top alignment
-    \vspace{0pt} % ensure top alignment
+  \begin{subtable}[t]{0.48\textwidth}
+    \vspace{0pt}
     \centering
     \begin{tabular}{l|ccc}
-    \toprule
-    \textbf{Model} & \textbf{LPIPS} $\downarrow$ & \textbf{SSIM} $\uparrow$ & \textbf{PSNR} $\uparrow$ \\
-    \midrule
-    Ours         & 0.45 & 0.17 & 13.04 \\
-    SD-Inpaint & 0.97 & 0.02 & 6.56 \\
-    Pix2Pix      & 1.00 & 0.03 & 6.36  \\
-    SD  & 0.95 & 0.02 & 6.46 \\
-    \bottomrule
+      \toprule
+      \textbf{Model} & \textbf{LPIPS} $\downarrow$ & \textbf{SSIM} $\uparrow$ & \textbf{PSNR} $\uparrow$ \\
+      \midrule
+      Ours         & \textbf{0.45} & \textbf{0.17} & \textbf{13.04} \\
+      Kandinsky 2.2 & 0.91 & 0.09 & 9.55 \\
+      SD-Inpaint   & 0.97 & 0.02 & 6.56 \\
+      Pix2Pix      & 1.00 & 0.03 & 6.36 \\
+      SD           & 0.95 & 0.02 & 6.46 \\
+      \bottomrule
     \end{tabular}
     \subcaption{Comparison to non-finetuned baselines.}
     \label{tab:best-vs-baseline}
   \end{subtable}
   \hfill
-  \begin{subtable}[t]{0.48\textwidth} % top alignment
-    \vspace{0pt} % ensure top alignment
+  \begin{subtable}[t]{0.48\textwidth}
+    \vspace{0pt}
     \centering
     \begin{tabular}{cc|ccc}
-    \toprule
-    \textbf{TNS} & \textbf{TT [hrs]} & \textbf{LPIPS} $\downarrow$ & \textbf{SSIM} $\uparrow$ & \textbf{PSNR} $\uparrow$ \\
-    \midrule
-    27,000 & 60 & 0.45 & 0.17 & 13.04 \\
-    5,000 & 30 & 0.49 & 0.17 & 13.11 \\
-    15,000 & 30 & 0.50 & 0.16 & 13.10 \\
-    20,000 & 30 & 0.51 & 0.17 & 13.12 \\
-    10,000 & 30 & 0.52 & 0.17 & 12.65 \\
-    \bottomrule
+      \toprule
+      \textbf{TNS} & \textbf{TT [hrs]} & \textbf{LPIPS} $\downarrow$ & \textbf{SSIM} $\uparrow$ & \textbf{PSNR} $\uparrow$ \\
+      \midrule
+      27,000 & 30 & 0.50 & 0.16 & 12.41 \\
+      \midrule
+      27,000 & 60 & \textbf{0.45} & \textbf{0.17} & 13.04 \\
+      5,000  & 30 & 0.49 & \textbf{0.17} & 13.11 \\
+      15,000 & 30 & 0.50 & 0.16 & 13.10 \\
+      20,000 & 30 & 0.51 & 0.17 & \textbf{13.12} \\
+      10,000 & 30 & 0.52 & \textbf{0.17} & 12.65 \\
+      \bottomrule
     \end{tabular}
-    \subcaption{Effect of training set size and time on performance.}
+    \subcaption{Effect of training set size and training time.}
     \label{tab:scale-study}
   \end{subtable}
-  \caption{Comparison of our best model against non-finetuned baselines and ablation study on effect of time and training set size scale.}
-  \label{tab:base-and-scale}
+  \caption{Top: Comparison to non-finetuned baselines (left) and scale study (right)}
 \end{table*}
+
+\vspace{1em}
+
+\begin{table*}[t]
+  \centering
+  \begin{tabular}{cc|cccc}
+    \toprule
+    \textbf{Text Scale} & \textbf{Image Scale} & \textbf{LPIPS Rank} & \textbf{SSIM Rank} & \textbf{PSNR Rank}  & \textbf{Mean Rank} \\
+    \midrule
+    5.0 & 2.5 & 6.0 & 7.0 & 5.0  & \textbf{6.00} \\
+    1.5 & 5.0 & 9.0 & 4.0 & 6.0 & 6.33 \\
+    2.5 & 7.5 & 10.0 & 2.0 & 9.0 & 7.00 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Ranking of inference guidance combinations by performance on SSIM, PSNR, and LPIPS.}
+  \label{tab:guidance-ranking}
+\end{table*}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.45\textwidth]{figures/pbr_test_overview.png}
+  \caption{Evolution of the best model's predictons on a single validation sample over the training process. First prediction in the figure made after 10,000 steps. The following predictions are made every 5,000 steps.}
+  \label{fig:test-overview}
+\end{figure}
+
+\subsection{Experimental setup}
+Our best model is trained on a single NVIDIA V100 GPU for 60 hours using a batch size of 20. We optimize using the AdamW optimizer with a learning rate of \(1 \times 10^{-4}\), a weight decay of \(1 \times 10^{-2}\), and 1000 warm-up steps. 
+To stabilize training, we apply gradient clipping based on the \(\ell_2\)-norm. Input images are used at their original 
+resolution of \(512 \times 512\) pixels. The DDIM loss is scaled by a factor of 0.5. 
+Training is performed on the full dataset comprising 27{,}000 samples, 
+with validation conducted every 1000 steps on a held-out set of 300 images. 
+During inference, we employ a guidance scale of 1.5 for text and 5.0 for the input image. 
+Our finetuning is initialized from the Stable Diffusion v1.5 checkpoint \cite{sd} to which we add additional input channels
+for the masked image. We report image quality using SSIM, LPIPS, and PSNR metrics.
+
+
+
+\subsection{Best model performance}
+Table \ref{tab:best-vs-baseline} shows a comparison of our best model against non-finetuned baselines which are currently considered state-of-the-art in the inpainting space. 
+As the results clearly show, our method achieves the best performance on all metrics. These results therefore demonstrate that
+the need for task specific fine tuning of the model is neccesary to achieve good results. In the remainder of this section,
+we focus on the effect of different hyperparameters on the performance of our model.
+
+
+\subsection{Guidance scale during inference}
+
+Diffusion models are relatively sensitive to the guidance scale hyper-parameters which can largely influence the final output.
+We therefore specifically investigate the effect of text and image during using for each modality scales (1.5, 2.5, 5.0, 7.5, 10.0). 
+For each possible configuration (25 in total), we run our best model and evaluate its peformance on 100 samples from the validation set.
+We then compute the image quality metrics and rank each configuration for each metrics, i.e., rank 1 is the best configuration for each metric.
+Table \ref{tab:guidance-ranking} shows the results of this experiment. While we find that the best configuration has text scale of 5.0 and image scale of 2.5,
+we decide to opt for the second best configuration, which has text scale of 1.5 and image scale of 5.0 as our task is more image driven, and 
+therefore we want to prioritize the image guidance.
+
+\subsection{Training set size and duration}
+
+Table \ref{tab:scale-study} shows the effect of training set size and duration on the performance of our model. The results show
+that longer training time as well as the full dataset leads to the overall best results. However, it is important to note that
+the difference in peformance are relatively small. This is especially suprising for training on 5,000 images. 
+We hypothesize that this could be due to the lack of diversity in the training set since it was generated by another model. However,
+we have not verified this hypothesis.
+
+\subsection{Training strategy and architecture}
+Finetuning full SD v1.5 model which has over one billion parameters is computationally expensive. We therefore investigate
+whether we can finetune only the LoRA weights of the model or even train a smaller model from scratch. Further, we investigate
+whether finetuning an inpainting model is better than finetuning the full SD v1.5 model or InstructPix2Pix. 
+As Table \ref{tab:arch-ablation} shows, finetuning the full SD v1.5 model leads to the best results. While LoRA \cite{lora} 
+allows us to use twice as larger batch size, it leads to sacrifice in performance. Further, training from scratch leads to 
+by far the worst results underpinning the importance of the pre-trained model. Finally, starting the 
+finetuning process from the inpainting model leads to relatively poor results too. The important 
+difference is that the inpainting model is taking in addition the mask itself as an input compare to InstructPix2Pix
+that only takes the masked image with the noise input and text prompt. Our qualitative analysis 
+suggest that this underpeformance can be attributed to the fact the inpainting model 
+tries to fill the area around the garment however it leaves the remainder as is.
+
+
+
+
 
 
 \begin{table*}[t]
   \centering
-
-  \begin{subtable}[t]{\textwidth}
-    \centering
-    \vspace{0pt}
-    \begin{tabular}{cccc|ccc}
-    \toprule
-    \textbf{DDIM Weight} & \textbf{LR} & \textbf{Cosine Scheduler LR} & \textbf{EMA} & \textbf{LPIPS} $\downarrow$ & \textbf{SSIM} $\uparrow$ & \textbf{PSNR} $\uparrow$ \\
-    \midrule
-    0.50 & 1e-04 & \xmark & \xmark & 0.45 & 0.17 & 13.04 \\
-    0.75 & 1e-05 & \xmark & \xmark & 0.58 & 0.14 & 12.21 \\
-    0.25 & 1e-05 & \xmark & \xmark & 0.63 & 0.12 & 12.08 \\
-    0.50 & 1e-05 & \cmark & \xmark & 0.69 & 0.12 & 10.70 \\
-    0.50 & 1e-05 & \xmark & \xmark & 0.69 & 0.09 & 9.88 \\
-    0.50 & 1e-05 & \xmark & \cmark & 0.70 & 0.12 & 11.40 \\
-    0.00 & 1e-05 & \xmark & \xmark & 0.78 & 0.06 & 10.07 \\
-    0.50 & 3e-06 & \xmark & \xmark & 0.83 & 0.09 & 10.22 \\
-    \bottomrule
-    \end{tabular}
-    \subcaption{Comparison of hyperparameter configurations and corresponding metrics.}
-    \label{tab:hyperparams}
-  \end{subtable}
-
-  \vspace{1em} % spacing between the tables
-
-  \begin{subtable}[t]{\textwidth}
-    \centering
-    \vspace{0pt}
     \begin{tabular}{ccccccc|ccc}
     \toprule
     \textbf{DDIM Weight} & \textbf{LR} & \textbf{BSZ} & \textbf{LoRA} & \textbf{Scratch} & \textbf{Inpaint} & \textbf{Base Model} & \textbf{LPIPS} $\downarrow$ & \textbf{SSIM} $\uparrow$ & \textbf{PSNR} $\uparrow$ \\
     \midrule
-    0.50 & 1e-04 & 20 & \cmark & \xmark & \xmark & pix2pix & 0.61 & 0.12 & 12.15 \\
-    0.50 & 1e-05 & 20 & \cmark & \xmark & \xmark & pix2pix & 0.76 & 0.10 & 10.62 \\
+    0.50 & 1e-04 & 20 & \xmark & \xmark & \xmark & sd & \textbf{0.50} & \textbf{0.16} & \textbf{12.41} \\
+    \midrule
+    0.50 & 1e-04 & 40 & \cmark & \xmark & \xmark & pix2pix & 0.57 & 0.09 & 11.75 \\
     0.50 & 1e-05 & 20 & \xmark & \cmark & \xmark & sd & 0.82 & 0.02 & 7.48 \\
-    0.75 & 1e-04 & 10 & \xmark & \xmark & \cmark & sd-inpaint & 0.86 & 0.05 & 7.11 \\
+    \midrule
     0.75 & 1e-04 & 20 & \cmark & \xmark & \cmark & sd-inpaint & 0.96 & 0.13 & 9.25 \\
-    0.50 & 5e-03 & 40 & \cmark & \xmark & \xmark & pix2pix & - & - & - \\
-    0.50 & 1e-04 & 40 & \cmark & \xmark & \xmark & pix2pix & - & - & - \\
+
     \bottomrule
     \end{tabular}
-    \subcaption{Ablation study over model architecture and training strategy.}
+    \caption{Ablation study over model architecture and training strategy. All models trained for 30 hours on 27,000 samples. Best results per 
+    metric are highlighted in bold. Top row shows the best model but only trained for 30 hours.}
     \label{tab:arch-ablation}
-  \end{subtable}
-
-  \caption{Effect of hyperparameters and architectural choices on model performance.}
-  \label{tab:combined-hparams-arch}
 \end{table*}
 
 
