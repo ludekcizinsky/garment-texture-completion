@@ -56,8 +56,7 @@ guidance scale, training strategy, and dataset size.
 Our findings show that image guidance plays a critical role, and surprisingly strong performance can be achieved even with a 
 small subset of training data. The proposed method significantly outperforms non-finetuned baselines on 
 LPIPS, SSIM, and PSNR metrics. 
-We provide an in-depth analysis of failure cases and outline key directions for extending our framework to predict full 
-PBR texture maps and handle real-world inputs.}
+We provide an in-depth analysis of failure cases and outline key directions for future work.}
 \end{abstract}
 
 
@@ -261,6 +260,10 @@ and image guidance scale $w_I = 5.0$ to be optimal. Using these guidance scales,
   &\quad + w_T \cdot \left( \boldsymbol{\epsilon}_{\theta}(\mathbf{z}_t, \mathbf{c}_I, \mathbf{c}_T) - \boldsymbol{\epsilon}_{\theta}(\mathbf{z}_t, \mathbf{c}_I, \varnothing) \right)
 \end{align*}
 
+Finally, to map the predicted latent back to image space, we make use of texture specific pretrained 
+decoder $\mathcal{D}$ adapted from \textit{DressCode} \cite{dresscode}.
+
+
 \textbf{Data.} We generate a dataset of 27{,}000 PBR texture maps using pretrained DressCode \cite{dresscode} model. Specifically,
 we first generate 30 different queries for colour, texture and pattern. We then feed each possible combination of these
 queries to the DressCode model which then generates a corresponding PBR texture map.
@@ -331,16 +334,19 @@ queries to the DressCode model which then generates a corresponding PBR texture 
 
 \vspace{-2.0em}
 \subsection{Experimental Setup}
-Our best model is trained on a single NVIDIA V100 GPU for 60 hours using a batch size of 20. We optimize using the AdamW optimizer with a learning rate of \(1 \times 10^{-4}\), a weight decay of \(1 \times 10^{-2}\), and 1000 warm-up steps. 
-To stabilize training, we apply gradient clipping based on the \(\ell_2\)-norm. Input images are used at their original 
-resolution of \(512 \times 512\) pixels. The DDIM loss is scaled by a factor of 0.5. 
-Training is performed on the full dataset comprising 27{,}000 samples, 
+Our best model is trained on a single NVIDIA V100 GPU for 60 hours using a batch size of 20. 
+We optimize using the AdamW optimizer with a learning rate of \(1 \times 10^{-4}\), 
+a weight decay of \(1 \times 10^{-2}\), and 1000 warm-up steps. 
+To stabilize training, we apply gradient clipping based on the \(\ell_2\)-norm. 
+Input images are used at their original resolution of \(512 \times 512\) pixels. 
+The DDIM loss is scaled by a factor of 0.5. Training is performed on the full dataset comprising 27{,}000 samples, 
 with validation conducted every 1000 steps on a held-out set of 300 images. 
 During inference, we employ a guidance scale of 1.5 for text and 5.0 for the input image. 
 Our finetuning is initialized from the Stable Diffusion v1.5 checkpoint \cite{sd} to which we add additional input channels
-for the masked image. We report image quality using SSIM, LPIPS, and PSNR metrics.
-
-
+for the masked image. Since we use a pre-trained \textit{frozen} decoder to map predicted latents 
+back to image space, we report image quality metrics - SSIM, LPIPS, and PSNR-based 
+solely on the predicted diffuse texture maps. We assume that the model achieving the 
+best performance on diffuse textures will also generalize best to the full set of PBR texture maps.
 
 \subsection{Best Model Performance}
 Table~\ref{tab:best-vs-baseline} compares our best performing model with non-finetuned SOTA baselines. 
@@ -428,23 +434,21 @@ especially when trained on synthetic data.
 
 
 \section{Future Work \& Limitations}
-This work focuses solely on predicting diffuse garment textures. 
-To enable high-quality rendering, future work should extend the model to predict normal and roughness maps, 
-potentially by decoding latents using DressCode's modality-specific VAE decoders~\cite{dresscode}. 
-We find that strong performance can be achieved with limited training data, suggesting that dataset diversity may be a limiting 
-factor—an avenue worth further investigation. Another key direction is evaluating generalization to real-world images. 
+In this work, all models were trained using the diffuse texture map as the supervision target 
+in latent space. However, we hypothesize that incorporating additional supervision from normal and 
+roughness maps could improve the model's performance on these texture components as well. We leave this 
+for future work. Further, we find that strong performance can be achieved with limited training data, 
+suggesting that dataset diversity may be a limiting factor. Another key direction is evaluating generalization to real-world images. 
 Pretrained models like Fabric Diffusion~\cite{fabricdiffusion} could be leveraged to generate realistic PBR supervision. 
 Finally, handling visual complexities such as logos, text, and lighting remains an open challenge.
 
 \section{Conclusion}
-We proposed a method for predicting diffuse garment texture maps from a 
-single (masked) image. By finetuning a pre-trained diffusion model on a synthetic dataset of 
-27,000 PBR textures, we demonstrated high-quality results. 
-Nevertheless, this represents a first step toward fully automated garment digitalization. 
-Future work should aim to extend the approach to predict normal and roughness maps and 
-assess its generalization to real-world images.
-
-
+We introduced a method for predicting PBR texture maps from a single masked image. 
+By fine-tuning a pre-trained diffusion model on a synthetic dataset of 27,000 PBR textures, 
+our approach achieves high-quality results and outperforms state-of-the-art inpainting models 
+without fine-tuning. Future work should explore the model's generalization to real-world images and 
+investigate the benefits of incorporating additional supervision from normal and roughness maps 
+to further improve performance on these texture components.
 
 \newpage
 \bibliographystyle{plainnat}
