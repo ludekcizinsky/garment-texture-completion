@@ -27,6 +27,7 @@ data:
   batch_size: 20 # baseline: 64
   res: 512 # baseline: 512
   load_all_pbr_maps: false
+  filter_selected_textures: false
 
 # Optimisation
 optim:

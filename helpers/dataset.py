@@ -68,6 +68,14 @@ class InpaintingDataset(utils.data.Dataset):
             self.texture_paths = [self.texture_paths[i] for i in selected_indices]
 
 
+        if cfg.data.filter_selected_textures and selected_indices is not None:
+            new_texture_paths = []
+            for texture_path in self.texture_paths:
+                name = texture_path.split("/")[-1]
+                if name in cfg.data.val_sel_texture_names:
+                    new_texture_paths.append(texture_path)
+            self.texture_paths = new_texture_paths
+
         mask = np.array(Image.open(cfg.data.mask_path).convert("L")) # Load mask as grayscale
         mask = cv2.resize(mask, (self.res, self.res), interpolation=cv2.INTER_NEAREST).astype("float32") / 255.0
         self.mask = np.stack([mask] * 3, axis=-1)  # Convert to 3 channels

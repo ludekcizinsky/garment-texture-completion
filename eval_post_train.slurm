@@ -2,13 +2,11 @@
 #SBATCH --job-name=eval_post_train
 #SBATCH --output=/home/cizinsky/garment-texture-completion/outputs/slurm/%x.%j.out
 #SBATCH --error=/home/cizinsky/garment-texture-completion/outputs/slurm/%x.%j.err
-#SBATCH --time=07:00:00            
+#SBATCH --time=02:00:00            
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=10           
 #SBATCH --mem=32G                   
 #SBATCH --gres=gpu:1                
-#SBATCH --account=math-454
-#SBATCH --qos=math-454
 
 source /home/cizinsky/venvs/garment/bin/activate
 

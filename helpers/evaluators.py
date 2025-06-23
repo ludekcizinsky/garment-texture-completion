@@ -101,6 +101,7 @@ def run_post_train_evaluation(eval_cfg):
         cfg.data.num_workers = eval_cfg.num_workers
         with open_dict(cfg):
             cfg.data.load_all_pbr_maps = eval_cfg.full_pbr_inference
+            cfg.data.filter_selected_textures = False
 
         print("FYI: Loading model and data")
         pl.seed_everything(cfg.seed)

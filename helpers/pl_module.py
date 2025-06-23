@@ -293,7 +293,7 @@ class GarmentInpainterModule(pl.LightningModule):
             preds = self.inference_pipe(
                 prompts,
                 image=zero_one_img_tensors,
-                num_inference_steps=10,
+                num_inference_steps=num_inference_steps,
                 image_guidance_scale=image_guidance_scale,
                 guidance_scale=guidance_scale,
                 output_type="latent",
