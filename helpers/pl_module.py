@@ -221,7 +221,32 @@ class GarmentInpainterModule(pl.LightningModule):
 
         if self.full_pbr_inference:
             latents = self.inference(batch["partial_diffuse_img"], masks=batch["mask"])
-            return latents
+
+            # Prepare predictions
+            self.model.vae_diffuse = self.model.vae_diffuse.to(dtype=torch.float32)
+            self.model.vae_normal = self.model.vae_normal.to(dtype=torch.float32)
+            self.model.vae_roughness = self.model.vae_roughness.to(dtype=torch.float32)
+
+            pt_diffuse = denormalise_image_torch(self.model.vae_diffuse.decode(latents / self.model.vae_diffuse.config.scaling_factor, return_dict=False)[0])
+            pt_normal = denormalise_image_torch(self.model.vae_normal.decode(latents / self.model.vae_normal.config.scaling_factor, return_dict=False)[0])
+            pt_roughness = denormalise_image_torch(self.model.vae_roughness.decode(latents / self.model.vae_roughness.config.scaling_factor, return_dict=False)[0])
+
+            # Prepare targets
+            target_diffuse = denormalise_image_torch(batch["full_diffuse_img"])
+            target_normal = denormalise_image_torch(batch["normal_img"])
+            target_roughness = denormalise_image_torch(batch["roughness_img"])
+
+            # Compute metrics
+            diffuse_metrics = compute_all_metrics(pt_diffuse, target_diffuse)
+            normal_metrics = compute_all_metrics(pt_normal, target_normal)
+            roughness_metrics = compute_all_metrics(pt_roughness, target_roughness)
+
+            return {
+                "diffuse_metrics": diffuse_metrics,
+                "normal_metrics": normal_metrics,
+                "roughness_metrics": roughness_metrics
+            }
+
         else:
             reconstructed_imgs = self.inference(batch["partial_diffuse_img"], masks=batch["mask"])
             reconstructed_imgs_tensors = torch.stack([pil_to_tensor(img) for img in reconstructed_imgs]).to(self.device)

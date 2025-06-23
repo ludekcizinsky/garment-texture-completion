@@ -1,12 +1,12 @@
 entity: ludekcizinsky
-project: pbr-generation
+project: garment-diffusion
 
 use_pretrained_unet: false # true if you want to run non finetuned model
-run_name: twilight-sponge-160
-run_id: fstkreeo
+run_name: valiant-resonance-120
+run_id: 6ei613pt
 num_workers: 10
 val_debug_size: -1
-
+full_pbr_inference: true
 
 hydra:
   run:

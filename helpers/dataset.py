@@ -98,6 +98,19 @@ class InpaintingDataset(utils.data.Dataset):
             "mask": 1 - mask[:1]
         }
 
+        if self.cfg.data.load_all_pbr_maps:
+            normal_img = data_utils.load_image_as_array(os.path.join(self.texture_paths[index], "texture_normal.png"))
+            normal_img = cv2.resize(normal_img, (self.res, self.res), interpolation=cv2.INTER_AREA)
+            normal_img = data_utils.normalise_image(normal_img)
+            normal_img = data_utils.channels_first(normal_img)
+            grid_data["normal_img"] = normal_img
+
+            roughness_img = data_utils.load_image_as_array(os.path.join(self.texture_paths[index], "texture_roughness.png"))
+            roughness_img = cv2.resize(roughness_img, (self.res, self.res), interpolation=cv2.INTER_AREA)
+            roughness_img = data_utils.normalise_image(roughness_img)
+            roughness_img = data_utils.channels_first(roughness_img)
+            grid_data["roughness_img"] = roughness_img
+            
         return grid_data
     
 class ResumableInpaintingIterableDataset(IterableDataset):

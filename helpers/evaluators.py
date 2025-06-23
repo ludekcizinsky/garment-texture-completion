@@ -3,12 +3,10 @@ import traceback
 
 import pytorch_lightning as pl
 
-from omegaconf import OmegaConf
-from hydra import initialize, compose
+from omegaconf import OmegaConf, open_dict
 
 import torch
 from torchvision.transforms.functional import pil_to_tensor
-from torchvision.utils import make_grid
 
 from helpers.pl_module import GarmentInpainterModule
 from helpers.dataset import get_dataloaders
@@ -101,35 +99,57 @@ def run_post_train_evaluation(eval_cfg):
         OmegaConf.set_struct(cfg, False)
         cfg.data.val_debug_size = eval_cfg.val_debug_size
         cfg.data.num_workers = eval_cfg.num_workers
+        with open_dict(cfg):
+            cfg.data.load_all_pbr_maps = eval_cfg.full_pbr_inference
 
         print("FYI: Loading model and data")
         pl.seed_everything(cfg.seed)
         model, val_dataloader = load_model_and_data(cfg, checkpoint)
+        model.full_pbr_inference = eval_cfg.full_pbr_inference
+        if eval_cfg.full_pbr_inference:
+            model.model._load_normal_roughness_decoders()
         trainer = pl.Trainer(accelerator="gpu", devices=1, logger=False, callbacks=[])
 
         # Predict
         outputs = trainer.predict(model, val_dataloader)
 
-        # Compute metrics
-        all_ssim = torch.cat([output["ssim"] for output in outputs])
-        all_psnr = torch.cat([output["psnr"] for output in outputs])
-        all_lpips = torch.cat([output["lpips"] for output in outputs])
-
-        mean_ssim = all_ssim.mean()
-        mean_psnr = all_psnr.mean()
-        mean_lpips = all_lpips.mean()
-
-        # Log
+        # Log the results
         if not eval_cfg.use_pretrained_unet:
             run = wandb.init(entity=eval_cfg.entity, project=eval_cfg.project, id=eval_cfg.run_id, resume="must")
         else:
             run = wandb.init(entity=eval_cfg.entity, project=eval_cfg.project)
 
-        run.summary.update({
-            "final_eval/ssim": mean_ssim,
-            "final_eval/psnr": mean_psnr,
-            "final_eval/lpips": mean_lpips
-        })
+        if eval_cfg.full_pbr_inference:
+            for texture_name in ["diffuse", "normal", "roughness"]:
+
+                all_ssim = torch.cat([output[f"{texture_name}_metrics"]["ssim"] for output in outputs])
+                all_psnr = torch.cat([output[f"{texture_name}_metrics"]["psnr"] for output in outputs])
+                all_lpips = torch.cat([output[f"{texture_name}_metrics"]["lpips"] for output in outputs])
+
+                mean_ssim = all_ssim.mean()
+                mean_psnr = all_psnr.mean()
+                mean_lpips = all_lpips.mean()
+
+                run.summary.update({
+                    f"final_eval/{texture_name}/ssim": mean_ssim,
+                    f"final_eval/{texture_name}/psnr": mean_psnr,
+                    f"final_eval/{texture_name}/lpips": mean_lpips
+                })
+        else:
+            all_ssim = torch.cat([output["ssim"] for output in outputs])
+            all_psnr = torch.cat([output["psnr"] for output in outputs])
+            all_lpips = torch.cat([output["lpips"] for output in outputs])
+
+            mean_ssim = all_ssim.mean()
+            mean_psnr = all_psnr.mean()
+            mean_lpips = all_lpips.mean()
+
+            run.summary.update({
+                "final_eval/ssim": mean_ssim,
+                "final_eval/psnr": mean_psnr,
+                "final_eval/lpips": mean_lpips
+            })
+
         run.finish()
     except Exception as e:
         print(f"Error: {e}")

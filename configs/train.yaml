@@ -26,6 +26,7 @@ data:
   num_workers: 10
   batch_size: 20 # baseline: 64
   res: 512 # baseline: 512
+  load_all_pbr_maps: false
 
 # Optimisation
 optim:
