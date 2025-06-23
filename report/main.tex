@@ -440,7 +440,9 @@ roughness maps could improve the model's performance on these texture components
 for future work. Further, we find that strong performance can be achieved with limited training data, 
 suggesting that dataset diversity may be a limiting factor. Another key direction is evaluating generalization to real-world images. 
 Pretrained models like Fabric Diffusion~\cite{fabricdiffusion} could be leveraged to generate realistic PBR supervision. 
-Finally, handling visual complexities such as logos, text, and lighting remains an open challenge.
+In addition, handling visual complexities such as logos, text, and lighting remains an open challenge. Finally,
+we only tested our model with a single mask, therefore future work should investigate the model's generalization to 
+unseen masks.
 
 \section{Conclusion}
 We introduced a method for predicting PBR texture maps from a single masked image. 
