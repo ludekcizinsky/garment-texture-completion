@@ -6,7 +6,7 @@ run_name: valiant-resonance-120
 run_id: 6ei613pt
 num_workers: 10
 val_debug_size: -1
-full_pbr_inference: true
+full_pbr_inference: false
 
 hydra:
   run:
