@@ -29,6 +29,8 @@ class GarmentInpainterModule(pl.LightningModule):
         self.prompt = "fill the missing parts of a fabric texture matching the existing colors and style"
         self.null_prompt = ""
 
+        self.full_pbr_inference = False
+
         self._get_inference_pipe()
 
     def _get_inference_pipe(self):
@@ -216,12 +218,17 @@ class GarmentInpainterModule(pl.LightningModule):
         self.val_results = []    
 
     def predict_step(self, batch, batch_idx):
-        reconstructed_imgs = self.inference(batch["partial_diffuse_img"], masks=batch["mask"])
-        reconstructed_imgs_tensors = torch.stack([pil_to_tensor(img) for img in reconstructed_imgs]).to(self.device)
-        target_imgs = denormalise_image_torch(batch["full_diffuse_img"])
-        image_metrics = compute_all_metrics(reconstructed_imgs_tensors, target_imgs)
 
-        return image_metrics
+        if self.full_pbr_inference:
+            latents = self.inference(batch["partial_diffuse_img"], masks=batch["mask"])
+            return latents
+        else:
+            reconstructed_imgs = self.inference(batch["partial_diffuse_img"], masks=batch["mask"])
+            reconstructed_imgs_tensors = torch.stack([pil_to_tensor(img) for img in reconstructed_imgs]).to(self.device)
+            target_imgs = denormalise_image_torch(batch["full_diffuse_img"])
+            image_metrics = compute_all_metrics(reconstructed_imgs_tensors, target_imgs)
+
+            return image_metrics
 
     def configure_optimizers(self):
         return_dict = {}
@@ -255,7 +262,19 @@ class GarmentInpainterModule(pl.LightningModule):
         self.inference_pipe.unet = self.model.unet.to(dtype=torch.float32)
         self.inference_pipe.vae = self.model.vae_diffuse.to(dtype=torch.float32)
 
-        if self.hparams.model.is_inpainting:
+
+        if not self.hparams.model.is_inpainting and self.full_pbr_inference:
+            print("FYI: running full pbr inference using pix2pix")
+            preds = self.inference_pipe(
+                prompts,
+                image=zero_one_img_tensors,
+                num_inference_steps=10,
+                image_guidance_scale=image_guidance_scale,
+                guidance_scale=guidance_scale,
+                output_type="latent",
+                return_dict=True,
+            )[0]
+        elif self.hparams.model.is_inpainting:
             print("FYI: running inpainting inference")
             preds = self.inference_pipe(
                 prompts,

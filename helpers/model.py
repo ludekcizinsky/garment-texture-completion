@@ -74,7 +74,30 @@ class GarmentDenoiser(nn.Module):
         for module in [self.vae_diffuse]:
             for param in module.parameters():
                 param.requires_grad = False
-        
+
+
+    def _load_normal_roughness_decoders(self):
+
+        self.vae_normal = AutoencoderKL.from_pretrained(
+            os.path.join(self.cfg.model.vae_path, "refine_vae"),
+            subfolder="vae_checkpoint_normal",
+            revision="fp32",
+            local_files_only=True,
+            torch_dtype=self.weight_dtype,
+        )
+
+        self.vae_roughness = AutoencoderKL.from_pretrained(
+            os.path.join(self.cfg.model.vae_path, "refine_vae"),
+            subfolder="vae_checkpoint_roughness",
+            revision="fp32",
+            local_files_only=True,
+            torch_dtype=self.weight_dtype,
+        )
+
+        for module in [self.vae_normal, self.vae_roughness]:
+            for param in module.parameters():
+                param.requires_grad = False
+
     def _classifier_free_guidance(self, text_embeds, null_prompt_embeds, partial_image_embeds):
         """
         # Conditioning dropout to support classifier-free guidance during inference. For more details
