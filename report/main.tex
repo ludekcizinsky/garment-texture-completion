@@ -230,23 +230,23 @@ The decoder was specifically fine-tuned for the task of reconstructing diffuse t
 
 Figure \ref{fig:trn-overview} shows an overview of our fine tuning pipeline. Given an input diffuse texture $\mathbf{x}_0$ and a binary mask $\mathbf{m}$, we encode the full and masked textures using the VAE encoder:
 \vspace{0.0em}
-$$
+\begin{equation}
 \mathbf{z}_0 = \mathcal{E}(\mathbf{x}_0), \quad \mathbf{z}_m = \mathcal{E}(\mathbf{x}_0 \odot \mathbf{m}),
-$$
+\end{equation}
 
 where $\odot$ denotes element-wise multiplication. We then sample a timestep $t \sim \mathcal{U}(1, T)$, using PNDM scheduler \cite{pndm}, and generate a noisy latent:
 \vspace{0.0em}
-$$
+\begin{equation}
 \mathbf{z}_t = \sqrt{\bar{\alpha}_t} \mathbf{z}_0 + \sqrt{1 - \bar{\alpha}_t} \boldsymbol{\epsilon}, \quad \boldsymbol{\epsilon} \sim \mathcal{N}(0, \mathbf{I}),
-$$
+\end{equation}
 
 where $\bar{\alpha}_t$ is the cumulative product of noise schedule coefficients. A conditioning text prompt $\mathbf{c}$ (constant across all samples) is embedded using CLIP \cite{clip}. To enable classifier-free guidance \cite{cfg}, we randomly drop the conditioning with some probability $p_{\text{drop}}$.
 
 The model $\boldsymbol{\epsilon}_\theta$ is trained to predict the noise $\boldsymbol{\epsilon}$ added to $\mathbf{z}_0$. The total loss is then a weighted sum of the denoising objective and a DDIM reconstruction loss:
 \vspace{0.0em}
-$$
+\begin{equation}
 \mathcal{L} = \|\boldsymbol{\epsilon} - \boldsymbol{\epsilon}_\theta(\mathbf{z}_t, t, \mathbf{c})\|_2^2 + \lambda_{\text{DDIM}} \cdot \mathcal{L}_{\text{DDIM}}(\mathbf{z}_0, \hat{\mathbf{z}}_0),
-$$
+\end{equation}
 
 where $\hat{\mathbf{z}}_0$ is the model's reconstruction using DDIM inversion \cite{ddim} and $\lambda_{\text{DDIM}}$ is the weight of DDIM loss.
 
@@ -259,9 +259,10 @@ and image guidance scale $w_I = 5.0$ to be optimal. Using these guidance scales,
 \vspace{0.0em}
 \begin{align*}
   \tilde{\boldsymbol{\epsilon}}_{\theta}(\mathbf{z}_t, &\mathbf{c}_I, \mathbf{c}_T) = \boldsymbol{\epsilon}_{\theta}(\mathbf{z}_t, \varnothing, \varnothing) \\
-  &\quad + w_I \cdot \left( \boldsymbol{\epsilon}_{\theta}(\mathbf{z}_t, \mathbf{c}_I, \varnothing) - \boldsymbol{\epsilon}_{\theta}(\mathbf{z}_t, \varnothing, \varnothing) \right) \\
+  &\quad + w_I \cdot \left( \boldsymbol{\epsilon}_{\theta}(\mathbf{z}_t, \mathbf{c}_I, \varnothing) - \boldsymbol{\epsilon}_{\theta}(\mathbf{z}_t, \varnothing, \varnothing) \right) \tag{4} \\
   &\quad + w_T \cdot \left( \boldsymbol{\epsilon}_{\theta}(\mathbf{z}_t, \mathbf{c}_I, \mathbf{c}_T) - \boldsymbol{\epsilon}_{\theta}(\mathbf{z}_t, \mathbf{c}_I, \varnothing) \right)
 \end{align*}
+
 
 Finally, to map the predicted latent back to image space, we make use of texture specific pretrained 
 decoder $\mathcal{D}$ adapted from \textit{DressCode} \cite{dresscode}.
