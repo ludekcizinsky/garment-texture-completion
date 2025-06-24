@@ -15,7 +15,7 @@
 \usepackage{subcaption}
 \captionsetup{labelsep=period}
 %\usepackage[font=small]{caption}
-\setlength{\droptitle}{-40pt}  % Adjust as needed
+\setlength{\droptitle}{-20pt}  % Adjust as needed
 
 
 \usepackage{amssymb}
@@ -27,11 +27,11 @@
 
 
 
-\title{\vspace{-1em}{\Large\textbf{Garment Texture Completion in UV space using Diffusion}}\vspace{-1em}}
+\title{\vspace{-1em}{\Large\textbf{Garment Texture Completion in UV space using Stable Diffusion}}\vspace{-1em}}
 
 \author{
   \begin{tabular}{c c}
-  Ludek Cizinsky & Yingxuan You\thanks{Yingxuan provided the initial idea, and model pipeline based on her previous work. She then provided Ludek with helpful feedback and guidance throughout the semester.}  \\
+  Ludek Cizinsky & Yingxuan You\thanks{Yingxuan contributed the initial research idea and the foundational model pipeline, building on her prior work. Throughout the semester, she provided Ludek with valuable guidance and constructive feedback.}  \\
   \texttt{ludek.cizinsky@epfl.ch} & \texttt{yingxuan.you@epfl.ch} \\
   EPFL & EPFL
   \end{tabular}
@@ -424,7 +424,7 @@ Additionally, raising the DDIM loss weight from 0.50 to 0.75 yields further perf
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.45\textwidth]{figures/failure_cases.png}
+  \includegraphics[width=0.43\textwidth]{figures/failure_cases.png}
   \caption{\textbf{Hardest Cases.} Hardest cases based on SSIM metric for the best model.}
   \label{fig:hardest-cases}
 \end{figure}
@@ -436,25 +436,71 @@ information in the masked input image, which requires the model to rely heavily 
 learned priors over the garment texture distribution. This is a challenging task, 
 especially when trained on synthetic data.
 
+\subsection{Full PBR Texture Maps Prediction}
+
+During inference, the model predicts a complete set of PBR texture maps from a single masked input image. As illustrated in Figure~\ref{fig:full-pbr-showcase}, the predicted normal and roughness maps closely match the ground truth, while the diffuse texture exhibits noticeable deviations in color. Table~\ref{tab:full-pbr-metrics} confirms this trend, showing stronger performance for normal and roughness prediction compared to diffuse. We attribute this discrepancy to the higher variability and ambiguity inherent in diffuse textures. Unlike normals and roughness, which are locally smooth and strongly constrained by shading cues, the diffuse map often contains high-frequency patterns and color variations that are harder to infer and continue into the masked regions.
 
 \section{Future Work \& Limitations}
-In this work, all models were trained using the diffuse texture map as the supervision target 
-in latent space. However, we hypothesize that incorporating additional supervision from normal and 
-roughness maps could improve the model's performance on these texture components as well. We leave this 
-for future work. Further, we find that strong performance can be achieved with limited training data, 
-suggesting that dataset diversity may be a limiting factor. Another key direction is evaluating generalization to real-world images. 
-Pretrained models like Fabric Diffusion~\cite{fabricdiffusion} could be leveraged to generate realistic PBR supervision. 
-In addition, handling visual complexities such as logos, text, and lighting remains an open challenge. Finally,
-we only tested our model with a single mask, therefore future work should investigate the model's generalization to 
-unseen masks.
+In this work, all models were trained using the diffuse texture map as the sole supervision target in 
+latent space. We hypothesize, however, that incorporating additional supervision from the normal and 
+roughness maps could further enhance the model's performance on these components. 
+We leave this for future investigation.
+
+Moreover, our results suggest that strong performance can be achieved with a relatively small training set, 
+indicating that limited dataset diversity, rather than size, may be the primary bottleneck. 
+An important avenue for future research is evaluating the model's ability to generalize to real-world images. In this context, pretrained models such as Fabric Diffusion~\cite{fabricdiffusion} could be used to synthesize more realistic PBR supervision signals.
+
+Finally, our evaluation was conducted using a single predefined mask. Future work should explore the 
+model's robustness to a wider range of masking patterns, including unseen or irregular occlusions.
+
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.45\textwidth]{figures/full_pbr_showcase.png}
+  \caption{\textbf{Full PBR texture maps prediction.} Showcase of the best model's prediction of a full set of PBR texture maps 
+  based on a single masked image.}
+  \label{fig:full-pbr-showcase}
+\end{figure}
+
+\begin{table}[t]
+  \centering
+  \begin{tabular}{l | ccc | c}
+    \toprule
+    \textbf{Metric} & \textbf{Diffuse} & \textbf{Normal} & \textbf{Roughness} & \textbf{Mean} \\
+    \midrule
+    LPIPS $\downarrow$ & 0.45 & 0.26 & 0.28 & 0.33 \\
+    SSIM $\uparrow$ & 0.17 & 0.50 & 0.52 & 0.40 \\
+    PSNR $\uparrow$ & 13.04 & 25.76 & 23.63 & 20.81 \\
+    \bottomrule
+    \end{tabular}
+  \caption{\textbf{Evaluation metrics for diffuse, normal, and roughness maps.} 
+  The best model's performance on predicting a full set of PBR texture maps.}
+  \label{tab:full-pbr-metrics}
+\end{table}
+
 
 \section{Conclusion}
-We introduced a method for predicting PBR texture maps from a single masked image. 
-By fine-tuning a pre-trained diffusion model on a synthetic dataset of 27,000 PBR textures, 
-our approach achieves high-quality results and outperforms state-of-the-art inpainting models 
-without fine-tuning. Future work should explore the model's generalization to real-world images and 
-investigate the benefits of incorporating additional supervision from normal and roughness maps 
-to further improve performance on these texture components.
+We presented a method for predicting PBR texture maps from a single masked image. 
+By fine-tuning a pre-trained Stable Diffusion v1.5~\cite{sd} on a synthetic dataset of 
+27,000 PBR textures, our approach produces high-quality results and outperforms state-of-the-art 
+inpainting models that are not fine-tuned for this task. Notably, we demonstrate that comparable 
+performance can be achieved even when training on a small subset of the dataset, and that 
+extended training time consistently improves results.
+
+Additionally, we find that full-model fine-tuning yields substantially better performance than using LoRA, 
+and that fine-tuning an inpainting model underperforms compared to using the 
+InstructPix2Pix~\cite{instructpix2pix} pipeline.
+
+Future work should investigate the model's generalization to real-world images and explore the benefits 
+of incorporating additional supervision from normal and roughness maps to enhance performance on these 
+texture components. Another promising direction is studying the role of the mask in shaping the model's 
+effectiveness and robustness.
+
+\section{Acknowledgements}
+I would like to thank my supervisor, Yingxuan You, for her valuable feedback and guidance throughout the semester. 
+Further, I would like to thank to Prof. Fua for hosting me in his lab and providing me with the computational resources
+that made this work possible.
+
 
 \newpage
 \bibliographystyle{plainnat}
