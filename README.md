@@ -1,6 +1,6 @@
 ## Garment Texture Completion in UV space using Diffusion
 
-![alt text](report/figures/pbr_train_overview.png)
+![Overview of the Training Pipeline](report/figures/pbr_train_overview.png)
 
 We present a method for completing garment texture maps in UV space using a diffusion 
 model conditioned on masked input and text prompts. Our approach focuses on 
@@ -11,12 +11,19 @@ DressCode pipeline. We fine-tune a Stable Diffusion v1.5 model and systematicall
 guidance scale, training strategy, and dataset size. 
 Our findings show that image guidance plays a critical role, and surprisingly strong performance can be achieved even with a 
 small subset of training data. The proposed method significantly outperforms non-finetuned baselines on 
-LPIPS, SSIM, and PSNR metrics. 
-We provide an in-depth analysis of failure cases and outline key directions for extending our framework to predict full 
-PBR texture maps and handle real-world inputs.
+LPIPS, SSIM, and PSNR metrics. We provide an in-depth analysis of failure cases and outline key directions for future work.
+
+## Model and Data Download
+
+We train all our model using synthetically generated data using [DressCode's](https://github.com/IHe-KaiI/DressCode) pretrained model. 
+The dataset and the best model can be both downloaded from Hugging Face: 
+- [dataset](https://huggingface.co/datasets/ludekcizinsky/garment-texture-completion)
+- [model](https://huggingface.co/ludekcizinsky/garment-completion)
 
 
 ## Setup
+
+In order to run the code, you need to create a virtual environment and install the dependencies with the following command:
 
 ```bash
 conda create -n garment-diffusion python=3.10
