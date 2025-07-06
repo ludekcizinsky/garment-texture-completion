@@ -20,6 +20,9 @@ The dataset and the best model can be both downloaded from Hugging Face:
 - [dataset](https://huggingface.co/datasets/ludekcizinsky/garment-texture-completion)
 - [model](https://huggingface.co/ludekcizinsky/garment-completion)
 
+## Weights and Biases
+
+We use Weights and Biases to track the training and evaluation progress. You can view the dashboard [here](https://wandb.ai/ludekcizinsky/garment-diffusion/table?nw=rsc98e2qz4b).
 
 ## Setup
 
